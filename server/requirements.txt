@@ -34,8 +34,6 @@ setuptools==70.2.0
 starlette==0.50.0
 sympy==1.14.0
 tokenizers==0.22.1
-torch==2.9.1+cpu
-torchvision==0.24.1+cpu
 tqdm==4.67.1
 transformers==4.57.3
 typing-inspection==0.4.2
