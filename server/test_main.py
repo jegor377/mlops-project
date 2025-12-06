@@ -13,3 +13,7 @@ def test_predict():
     )
     assert response.status_code == 200
     assert response.json() == {"prediction": "Very Positive"}
+
+def test_missing_text_field():
+    response = client.post("/predict", json={})
+    assert response.status_code == 422  # Unprocessable Entity
