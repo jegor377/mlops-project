@@ -1,7 +1,7 @@
 from fastapi import FastAPI
-from .ml_model import Model
-from .data_models import ModelRequest
-from .data_models import ModelResponse
+from ml_model import Model
+from data_models import ModelRequest
+from data_models import ModelResponse
 
 
 app = FastAPI()
