@@ -9,6 +9,10 @@ repos:
     rev: 25.11.0
     hooks:
     -   id: black
+-   repo: https://github.com/pycqa/isort
+    rev: 7.0.0
+    hooks:
+      - id: isort
 -   repo: https://github.com/pycqa/flake8
     rev: '7.3.0'
     hooks:
