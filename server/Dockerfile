@@ -1,9 +1,10 @@
-FROM python:3.12.3
+FROM python:3.12.3-slim
 
 WORKDIR /usr/src/app
 
-RUN pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 COPY requirements.txt ./
+
+RUN pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
