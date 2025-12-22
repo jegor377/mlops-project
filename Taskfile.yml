@@ -1,0 +1,11 @@
+# https://taskfile.dev
+
+version: '3'
+
+includes:
+  server:
+    taskfile: server/Taskfile.yaml
+    dir: server
+  k8n:
+    taskfile: k8n/Taskfile.yaml
+    dir: k8n

@@ -1,0 +1,25 @@
+version: '3'
+
+tasks:
+  create-cluster:
+    desc: "Create the dev kind cluster"
+    cmds:
+      - kind create cluster --config kind-config.yaml
+  setup:
+    desc: "Install the Gateway API CRDs"
+    cmds:
+      - kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/standard-install.yaml
+  apply-base:
+    desc: "Apply the base k8s manifests"
+    cmds:
+      - kubectl apply -f base/Namespace.yaml
+      - kubectl apply -f base/Deployment.yaml
+      - kubectl apply -f base/Service.yaml
+  delete-cluster:
+    desc: "Delete the dev kind cluster"
+    cmds:
+      - kind delete cluster
+  delete-namespace:
+    desc: "Delete the mlops-project namespace"
+    cmds:
+      - kubectl delete -f base/Namespace.yaml

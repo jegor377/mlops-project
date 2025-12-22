@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+
 from main import app
 
 client = TestClient(app)
@@ -49,3 +50,9 @@ def test_predict_speed():
 def test_missing_text_field():
     response = client.post("/predict", json={})
     assert response.status_code == 422  # Unprocessable Entity
+
+
+def test_ping():
+    response = client.get("/ping")
+    assert response.status_code == 200
+    assert response.text == '"pong"'
