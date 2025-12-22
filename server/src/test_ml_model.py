@@ -1,5 +1,6 @@
 import ml_model
 
+
 def test_correct_prediction():
     model = ml_model.Model()
     texts = [

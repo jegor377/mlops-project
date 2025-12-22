@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-server
+  namespace: mlops-project
+  labels:
+    app: ml-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ml-server
+  template:
+    metadata:
+      labels:
+        app: ml-server
+    spec:
+      containers:
+        - name: mlops-container
+          image: igorsantarek/ml_server:latest
+          ports:
+          - containerPort: 8000
+            protocol: TCP
+          env:
+          - name: HF_HOME
+            value: /app/.cache
+          - name: TRANSFORMERS_CACHE
+            value: /app/.cache/huggingface
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: 8000
+          startupProbe:
+            httpGet:
+              path: /ping
+              port: 8000
+            failureThreshold: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "2048Mi"
+              cpu: "1"
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+        runAsUser: 1001
+        runAsGroup: 1001
+        runAsNonRoot: true
