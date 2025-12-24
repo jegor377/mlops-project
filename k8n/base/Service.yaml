@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: ml-server
+  name: ml-server-svc
   namespace: mlops-project
 spec:
   selector:
