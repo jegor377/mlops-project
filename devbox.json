@@ -8,7 +8,8 @@
     "k9s@latest",
     "go-task@latest",
     "python@3.12.3",
-    "uv@latest"
+    "uv@latest",
+    "yq-go@latest"
   ],
   "shell": {
     "init_hook": [
