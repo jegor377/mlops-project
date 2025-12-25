@@ -2,10 +2,6 @@ logs:
   access:
     enabled: true
 
-entryPoints:
-  web:
-    address: ":80"
-
 # we enable gateway-api features
 providers:
   kubernetesGateway:
