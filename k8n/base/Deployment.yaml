@@ -23,9 +23,7 @@ spec:
             protocol: TCP
           env:
           - name: HF_HOME
-            value: /app/.cache
-          - name: TRANSFORMERS_CACHE
-            value: /app/.cache/huggingface
+            value: /tmp/.cache
           readinessProbe:
             httpGet:
               path: /ping

@@ -1,6 +1,14 @@
 docker_build(
     'igorsantarek/ml_server',
     './',
+    target='dev',
+    live_update=[
+        sync('src', '/app'),
+        run(
+            'uv sync',
+            trigger=['pyproject.toml', 'uv.lock'],
+        ),
+    ]
 )
 k8s_yaml('../k8n/base/Deployment.yaml')
 k8s_resource('ml-server', port_forwards=8000)
