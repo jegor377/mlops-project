@@ -9,3 +9,9 @@ includes:
   k8n:
     taskfile: k8n/Taskfile.yaml
     dir: k8n
+
+tasks:
+  tilt-up:
+    desc: "Start Tilt for local Kubernetes development"
+    cmds:
+      - tilt up
