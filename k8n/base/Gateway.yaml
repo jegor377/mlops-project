@@ -8,7 +8,7 @@ spec:
   listeners:
   - protocol: HTTP
     port: 8000
-    name: web
+    name: http
     allowedRoutes:
       namespaces:
         from: Same
