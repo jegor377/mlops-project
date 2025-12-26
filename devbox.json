@@ -9,7 +9,8 @@
     "go-task@latest",
     "python@3.12.3",
     "uv@latest",
-    "yq-go@latest"
+    "yq-go@latest",
+    "tilt@latest"
   ],
   "shell": {
     "init_hook": [
