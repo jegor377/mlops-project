@@ -3,7 +3,7 @@
 version: '3'
 
 vars:
-  IMAGE_REPO: "igorsantarek/mlops-server"
+  IMAGE_REPO: "igorsantarek/ml-server"
 
 tasks:
   generate-version:

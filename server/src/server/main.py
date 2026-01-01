@@ -4,7 +4,7 @@ from .models.data_models import ModelRequest, ModelResponse
 from .services.ml_model import Model
 
 app = FastAPI()
-model = Model()  # Load the ML model
+model = Model()
 
 
 @app.post("/predict", response_model=ModelResponse)
