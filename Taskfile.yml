@@ -9,8 +9,10 @@ includes:
   k8n:
     taskfile: k8n/Taskfile.yaml
     dir: k8n
-  build-push:
+  build-push-wf:
     taskfile: .github/workflows/build-push/Taskfile.yml
+  test-wf:
+    taskfile: .github/workflows/test/Taskfile.yml
 
 tasks:
   tilt-up:

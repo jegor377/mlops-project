@@ -49,8 +49,8 @@ jobs:
     - name: Lint with flake8
       run: task lint
     - name: Test with pytest (fail fast)
-      run: task server:test-not-slow-tests
+      run: task server:test-not-slow
     - name: Test with pytest (slow tests)
-      run: task server:test-slow-tests
+      run: task server:test-slow
     - name: Minimize uv cache
       run: uv cache prune --ci
