@@ -10,7 +10,9 @@
     "python@3.12.3",
     "uv@latest",
     "yq-go@latest",
-    "tilt@latest"
+    "tilt@latest",
+    "act@latest",
+    "gh@latest"
   ],
   "shell": {
     "init_hook": [

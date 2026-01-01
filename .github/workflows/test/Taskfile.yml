@@ -1,0 +1,15 @@
+# https://taskfile.dev
+
+version: '3'
+
+tasks:
+  trigger-push:
+    desc: "Trigger the Test workflow"
+    cmds:
+      - |
+        act push \
+          --container-architecture linux/amd64 \
+          --secret-file .github/workflows/secrets.json \
+          -e .github/workflows/test/test-event.json \
+          -P ubuntu-latest=catthehacker/ubuntu:act-22.04 \
+          -W .github/workflows/test.yml
