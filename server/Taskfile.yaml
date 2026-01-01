@@ -17,8 +17,8 @@ tasks:
   build-image:
     desc: "Build the mlops server docker image"
     cmds:
-      - docker build -t igorsantarek/ml_server:latest .
+      - docker build -t {{.IMAGE_REPO}}:latest .
   run-docker:
     desc: "Run the mlops server container locally"
     cmds:
-      - docker run -d -p 8000:8000 igorsantarek/ml_server:latest
+      - docker run -d -p 8000:8000 {{.IMAGE_REPO}}:latest
