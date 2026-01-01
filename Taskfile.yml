@@ -9,9 +9,27 @@ includes:
   k8n:
     taskfile: k8n/Taskfile.yaml
     dir: k8n
+  build-push-wf:
+    taskfile: .github/workflows/build-push/Taskfile.yml
+  test-wf:
+    taskfile: .github/workflows/test/Taskfile.yml
 
 tasks:
   tilt-up:
     desc: "Start Tilt for local Kubernetes development"
     cmds:
       - tilt up
+  sync-deps:
+    desc: "Sync dependencies for all components"
+    cmds:
+      - cd server
+      - uv sync
+      - cd ..
+      - uv sync
+  lint:
+    desc: "Run linters for all components"
+    cmds:
+      # stop the build if there are Python syntax errors or undefined names
+      - uv run flake8 server/src --count --select=E9,F63,F7,F82 --show-source --statistics
+      # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+      - uv run flake8 server/src --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics

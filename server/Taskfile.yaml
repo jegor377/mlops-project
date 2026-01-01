@@ -6,10 +6,14 @@ tasks:
     dir: src
     cmds:
       - uv run uvicorn main:app --reload
-  test-local:
-    desc: "Run the local tests"
+  test-not-slow:
+    desc: "Run the not slow tests"
     cmds:
-      - uv run pytest
+      - uv run pytest -m "not slow"
+  test-slow:
+    desc: "Run the slow tests"
+    cmds:
+      - uv run pytest -m "slow"
   build-image:
     desc: "Build the mlops server docker image"
     cmds:

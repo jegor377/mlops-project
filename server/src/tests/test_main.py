@@ -1,6 +1,7 @@
+import pytest
 from fastapi.testclient import TestClient
 
-from main import app
+from ..server.main import app
 
 client = TestClient(app)
 
@@ -12,6 +13,7 @@ def test_predict():
     assert response.json() == {"prediction": "Very Positive"}
 
 
+@pytest.mark.slow
 def test_predict_speed():
     import time
 
