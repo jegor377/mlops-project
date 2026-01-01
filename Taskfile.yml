@@ -2,6 +2,9 @@
 
 version: '3'
 
+vars:
+  IMAGE_REPO: "igorsantarek/ml_server"
+
 includes:
   server:
     taskfile: server/Taskfile.yaml
