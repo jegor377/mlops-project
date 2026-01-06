@@ -14,9 +14,11 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     outputs:
+      prs_created: ${{ steps.release.outputs.prs_created }}
       pr: ${{ steps.release.outputs.pr }}
     steps:
     - uses: googleapis/release-please-action@16a9c90856f42705d54a6fda1823352bdc62cf38 # v4.4.0
+      id: release
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         config-file: release-please-config.json
@@ -24,7 +26,7 @@ jobs:
         target-branch: main
   update-uv-lock:
     needs: release-please
-    if: ${{ needs.release-please.outputs.pr }}
+    if: ${{ needs.release-please.outputs.prs_created == 'true' }}
     runs-on: ubuntu-latest
 
     steps:
