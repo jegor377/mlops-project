@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/jegor377/mlops-project/compare/server@v0.2.0...server@v0.3.0) (2026-01-06)
+
+
+### Features
+
+* **server:** remove test method and change release-please config ([1f6b9a6](https://github.com/jegor377/mlops-project/commit/1f6b9a60be6045e016993693c6c13c1a51ee636e))
+
 ## [0.2.0](https://github.com/jegor377/mlops-project/compare/server@v0.1.0...server@v0.2.0) (2026-01-06)
 
 
