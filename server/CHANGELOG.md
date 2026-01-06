@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.0](https://github.com/jegor377/mlops-project/compare/server@v0.4.0...server@v0.5.0) (2026-01-06)
+
+
+### Features
+
+* **server:** adds get_version endpoint ([28b7523](https://github.com/jegor377/mlops-project/commit/28b7523562232731c786e8c7198739d1650e3984))
+* **server:** adds get_version endpoint ([341bbd7](https://github.com/jegor377/mlops-project/commit/341bbd7903aacbcc43c301b4aec2595c807d5b25))
+
 ## [0.4.0](https://github.com/jegor377/mlops-project/compare/server@v0.3.0...server@v0.4.0) (2026-01-06)
 
 
