@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+from . import __version__
 from .models.data_models import ModelRequest, ModelResponse
 from .services.ml_model import Model
 
@@ -16,3 +17,8 @@ async def read_root(request: ModelRequest):
 @app.get("/ping")
 async def ping():
     return "pong"
+
+
+@app.get("/version")
+async def get_version():
+    return {"version": __version__}
