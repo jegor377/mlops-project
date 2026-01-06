@@ -1,36 +1,12 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
-  "bootstrap-sha": "2e6cc0acd22136a837ac170b625652285d7d039c",
   "include-component-in-tag": true,
-  "include-v-in-tag": false,
-  "bump-minor-pre-major": true,
   "packages": {
     "server": {
-      "component": "server",
       "release-type": "python",
-      "version-file": "pyproject.toml"
+      "version-file": "pyproject.toml",
+      "component": "server"
     }
   },
-  "plugins": [],
-  "release-type": "simple",
-  "separate-pull-requests": false,
-  "tag-separator": "@",
-  "changelog-sections": [
-    {
-      "type": "feat",
-      "section": "Features"
-    },
-    {
-      "type": "fix",
-      "section": "Bug Fixes"
-    },
-    {
-      "type": "chore",
-      "section": "Chores"
-    },
-    {
-      "type": "revert",
-      "section": "Reverts"
-    }
-  ]
+  "tag-separator": "@"
 }
