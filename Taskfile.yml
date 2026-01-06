@@ -26,8 +26,10 @@ tasks:
     desc: "Sync dependencies for all components"
     cmds:
       - cd server
+      - uv lock
       - uv sync
       - cd ..
+      - uv lock
       - uv sync
   lint:
     desc: "Run linters for all components"
