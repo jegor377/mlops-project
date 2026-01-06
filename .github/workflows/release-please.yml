@@ -11,6 +11,16 @@ permissions:
   pull-requests: write
 
 jobs:
+  check-permissions:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check GitHub token permissions
+      run: |
+        echo "Checking token scopes..."
+        curl -s -D - \
+        -H "Authorization: token ${{ secrets.RELEASE_PLEASE_TOKEN }}" \
+        -H "Accept: application/vnd.github+json" \
+        https://api.github.com/
   release-please:
     runs-on: ubuntu-latest
     steps:
