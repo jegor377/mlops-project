@@ -22,15 +22,22 @@ tasks:
     desc: "Start Tilt for local Kubernetes development"
     cmds:
       - tilt up
-  sync-deps:
-    desc: "Sync dependencies for all components"
+  sync-repo-deps:
+    desc: "Sync repo dependencies"
     cmds:
-      - cd server
       - uv lock
       - uv sync
-      - cd ..
+  sync-server-deps:
+    desc: "Sync server dependencies"
+    dir: server
+    cmds:
       - uv lock
       - uv sync
+  sync-deps:
+    desc: "Sync all dependencies"
+    cmds:
+      - task: sync-repo-deps
+      - task: sync-server-deps
   lint:
     desc: "Run linters for all components"
     cmds:
