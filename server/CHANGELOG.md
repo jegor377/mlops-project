@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.6.0](https://github.com/jegor377/mlops-project/compare/server@0.5.0...server@0.6.0) (2026-01-06)
+
+
+### Features
+
+* **server:** adds root endpoint ([e9c3814](https://github.com/jegor377/mlops-project/commit/e9c38145aa09dfba900224368a33d58bcb5bd1a8))
+* **server:** adds root endpoint ([9a52e57](https://github.com/jegor377/mlops-project/commit/9a52e57b8ab78d2deefc9f90e0c8988a253747fd))
+
+
+### Bug Fixes
+
+* **server:** remove test msg ([b4a2dc5](https://github.com/jegor377/mlops-project/commit/b4a2dc592c2822d85de88297d1e5c1a15c59a8d7))
+* **server:** test ([1c8d685](https://github.com/jegor377/mlops-project/commit/1c8d6850874b5c91aa42e3cffba16cd48bb99ed7))
+* **server:** test ([348154e](https://github.com/jegor377/mlops-project/commit/348154e7754960dcffa39458535d53337ee5d539))
+* **server:** test commit ([0fee428](https://github.com/jegor377/mlops-project/commit/0fee428139ab119cf62c36e4bbde1ee871861e2a))
+
 ## [0.5.0](https://github.com/jegor377/mlops-project/compare/server@v0.4.0...server@v0.5.0) (2026-01-06)
 
 
