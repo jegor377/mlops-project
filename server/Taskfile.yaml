@@ -5,7 +5,7 @@ tasks:
     desc: "Run the mlops server locally"
     dir: src
     cmds:
-      - uv run uvicorn main:app --reload
+      - uv run uvicorn server.main:app --reload
   test-not-slow:
     desc: "Run the not slow tests"
     cmds:
