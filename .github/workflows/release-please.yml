@@ -11,19 +11,6 @@ permissions:
   pull-requests: write
 
 jobs:
-  check-permissions:
-    runs-on: ubuntu-latest
-    steps:
-    - name: "Test pull-requests: write"
-      run: |
-        code=$(curl -s -o /dev/null -w "%{http_code}" \
-          -X POST \
-          -H "Authorization: token ${{ github.token }}" \
-          -H "Accept: application/vnd.github+json" \
-          https://api.github.com/repos/${{ github.repository }}/pulls \
-          -d '{"title":"PR test","head":"test-gh-perm","base":"main"}')
-        echo "PR API response: $code"
-
   release-please:
     runs-on: ubuntu-latest
     steps:
