@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.0](https://github.com/jegor377/mlops-project/compare/server@v0.5.0...server@v0.6.0) (2026-01-06)
+
+
+### Features
+
+* **server:** adds root endpoint ([e9c3814](https://github.com/jegor377/mlops-project/commit/e9c38145aa09dfba900224368a33d58bcb5bd1a8))
+* **server:** adds root endpoint ([9a52e57](https://github.com/jegor377/mlops-project/commit/9a52e57b8ab78d2deefc9f90e0c8988a253747fd))
+
 ## [0.5.0](https://github.com/jegor377/mlops-project/compare/server@v0.4.0...server@v0.5.0) (2026-01-06)
 
 
