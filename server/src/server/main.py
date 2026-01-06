@@ -16,8 +16,3 @@ async def read_root(request: ModelRequest):
 @app.get("/ping")
 async def ping():
     return "pong"
-
-
-@app.get("/test")
-async def test():
-    return "test"
