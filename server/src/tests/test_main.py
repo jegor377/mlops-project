@@ -68,3 +68,11 @@ def test_version():
     resp = response.json()
     assert "version" in resp
     assert resp["version"] == __version__
+
+
+def test_root():
+    response = client.get("/")
+    assert response.status_code == 200
+    resp = response.json()
+    assert "message" in resp
+    assert resp["message"] == "Welcome to the ML model server!"

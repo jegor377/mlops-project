@@ -22,3 +22,8 @@ async def ping():
 @app.get("/version")
 async def get_version():
     return {"version": __version__}
+
+
+@app.get("/")
+async def root():
+    return {"message": "Welcome to the ML model server!"}
