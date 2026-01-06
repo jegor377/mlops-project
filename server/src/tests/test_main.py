@@ -58,3 +58,13 @@ def test_ping():
     response = client.get("/ping")
     assert response.status_code == 200
     assert response.text == '"pong"'
+
+
+def test_version():
+    from ..server import __version__
+
+    response = client.get("/version")
+    assert response.status_code == 200
+    resp = response.json()
+    assert "version" in resp
+    assert resp["version"] == __version__
