@@ -14,26 +14,6 @@ jobs:
   check-permissions:
     runs-on: ubuntu-latest
     steps:
-    - name: "Test issues: write"
-      run: |
-        code=$(curl -s -o /dev/null -w "%{http_code}" \
-          -X POST \
-          -H "Authorization: token ${{ github.token }}" \
-          -H "Accept: application/vnd.github+json" \
-          https://api.github.com/repos/${{ github.repository }}/issues \
-          -d '{"title":"Permission test"}')
-        echo "Issues API response: $code"
-
-    - name: "Test contents: write"
-      run: |
-        code=$(curl -s -o /dev/null -w "%{http_code}" \
-          -X PUT \
-          -H "Authorization: token ${{ github.token }}" \
-          -H "Accept: application/vnd.github+json" \
-          https://api.github.com/repos/${{ github.repository }}/contents/test.txt \
-          -d '{"message":"test commit","content":"dGVzdA=="}')
-        echo "Contents API response: $code"
-
     - name: "Test pull-requests: write"
       run: |
         code=$(curl -s -o /dev/null -w "%{http_code}" \
@@ -41,7 +21,7 @@ jobs:
           -H "Authorization: token ${{ github.token }}" \
           -H "Accept: application/vnd.github+json" \
           https://api.github.com/repos/${{ github.repository }}/pulls \
-          -d '{"title":"PR test","head":"test-branch","base":"main"}')
+          -d '{"title":"PR test","head":"test-gh-perm","base":"main"}')
         echo "PR API response: $code"
 
   release-please:
