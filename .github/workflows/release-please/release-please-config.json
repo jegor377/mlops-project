@@ -3,9 +3,7 @@
   "packages": {
     "server": {
       "release-type": "python",
-      "package-name": "server",
-      "component": "server",
-      "version-file": "pyproject.toml"
+      "component": "server"
     }
   },
   "include-component-in-tag": true,
