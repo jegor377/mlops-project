@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.0](https://github.com/jegor377/mlops-project/compare/server@0.6.0...server@0.7.0) (2026-01-11)
+
+
+### Features
+
+* **server:** remove the test ([c992041](https://github.com/jegor377/mlops-project/commit/c9920417bbc3a2f13331b05b4a5b7ccf8ab9fba8))
+
+
+### Bug Fixes
+
+* **server:** test ci ([f56ab3a](https://github.com/jegor377/mlops-project/commit/f56ab3a79a98d522750c7cd0f890b1f59a0ec7c4))
+
 ## [0.6.0](https://github.com/jegor377/mlops-project/compare/server@0.5.0...server@0.6.0) (2026-01-06)
 
 
