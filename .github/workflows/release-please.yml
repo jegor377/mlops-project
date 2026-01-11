@@ -27,6 +27,7 @@ jobs:
   update-uv-lock:
     needs: release-please
     runs-on: ubuntu-latest
+    if: ${{ needs.release-please.outputs.prs_created == 'true' }}
 
     steps:
       - name: Checkout release PR
