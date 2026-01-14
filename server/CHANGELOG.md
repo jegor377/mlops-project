@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/jegor377/mlops-project/compare/server@0.7.0...server@0.8.0) (2026-01-14)
+
+
+### Features
+
+* **server:** test release please change ([f1534d0](https://github.com/jegor377/mlops-project/commit/f1534d0536f656bb7191e7661aa87257e38ae59c))
+
 ## [0.7.0](https://github.com/jegor377/mlops-project/compare/server@0.6.0...server@0.7.0) (2026-01-11)
 
 
