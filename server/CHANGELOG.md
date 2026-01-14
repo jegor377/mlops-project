@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/jegor377/mlops-project/compare/server@0.8.0...server@0.8.1) (2026-01-14)
+
+
+### Bug Fixes
+
+* **server:** removes test comment ([5c55d87](https://github.com/jegor377/mlops-project/commit/5c55d8708f63a6a1aca048afc556c59bdf2ef524))
+
 ## [0.8.0](https://github.com/jegor377/mlops-project/compare/server@0.7.0...server@0.8.0) (2026-01-14)
 
 
