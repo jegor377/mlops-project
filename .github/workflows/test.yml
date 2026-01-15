@@ -15,12 +15,6 @@ permissions:
 
 jobs:
   build:
-
-    # don't test on release-please uv lock update commits
-    if: >-
-      (github.event_name == 'push' && !contains(github.event.head_commit.message, 'chore: release main')) ||
-      (github.event_name == 'pull_request' && !contains(github.event.pull_request.title, 'chore: release main'))
-
     runs-on: ubuntu-latest
 
     env:
