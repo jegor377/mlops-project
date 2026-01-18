@@ -12,6 +12,7 @@ repos:
         language: system
         pass_filenames: false
         files: ^k8s/\.(yaml|yml)$
+        exclude: Taskfile\.(yaml|yml)$
 -   repo: https://github.com/psf/black
     rev: 25.11.0
     hooks:
