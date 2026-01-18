@@ -1,0 +1,9 @@
+vars:
+  - file: config/{{ args.environment }}.yaml
+
+deployments:
+  - path: namespaces
+  - barrier: true
+  - path: third-party
+  - barrier: true
+  - include: services

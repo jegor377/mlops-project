@@ -9,9 +9,9 @@ includes:
   server:
     taskfile: server/Taskfile.yaml
     dir: server
-  k8n:
-    taskfile: k8n/Taskfile.yaml
-    dir: k8n
+  k8s:
+    taskfile: k8s/Taskfile.yaml
+    dir: k8s
   build-push-wf:
     taskfile: .github/workflows/build-push/Taskfile.yml
   test-wf:
