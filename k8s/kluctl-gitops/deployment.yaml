@@ -1,0 +1,4 @@
+deployments:
+  - path: namespaces
+  - barrier: true
+  - include: clusters
