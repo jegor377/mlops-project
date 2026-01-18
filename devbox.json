@@ -12,7 +12,8 @@
     "yq-go@latest",
     "tilt@latest",
     "act@latest",
-    "gh@latest"
+    "gh@latest",
+    "kluctl@latest"
   ],
   "shell": {
     "init_hook": [
