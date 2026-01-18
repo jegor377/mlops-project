@@ -8,7 +8,7 @@ spec:
   - name: ml-server-gw
     namespace: mlops-project
   hostnames:
-  - ml-server
+  - {{ sharedVars.hostname }}
   rules:
   - matches:
       - path:

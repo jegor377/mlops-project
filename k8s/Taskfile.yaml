@@ -1,0 +1,25 @@
+version: '3'
+
+includes:
+  kluctl:
+    taskfile: kluctl/Taskfile.yml
+    dir: kluctl
+  kluctl-gitops:
+    taskfile: kluctl-gitops/Taskfile.yml
+    dir: kluctl-gitops
+
+tasks:
+  create-clusters:
+    desc: "Create the kind clusters"
+    cmds:
+      - kind create cluster --config kind-config.yaml --name kind-staging
+      - kind create cluster --config kind-config.yaml --name kind-production
+  delete-clusters:
+    desc: "Delete the kind clusters"
+    cmds:
+      - kind delete cluster --name kind-staging
+      - kind delete cluster --name kind-production
+  port-forward:
+    desc: "Port forward the Traefik gateway to localhost"
+    cmds:
+      - kubectl -n traefik port-forward svc/traefik 80
