@@ -6,8 +6,9 @@ metadata:
 spec:
   interval: 5m
   source:
-    git: https://github.com/jegor377/mlops-project.git
-    path: k8s/kluctl
+    git:
+      url: https://github.com/jegor377/mlops-project.git
+      path: k8s/kluctl
   credentials:
     git:
       - host: github.com
