@@ -70,3 +70,4 @@ jobs:
         propertyPath: 'apiServer.version'
         value: ${{ steps.image-tag.outputs.version }}
         message: "chore: Update apiServer version to ${{ steps.image-tag.outputs.version }} on ${{ steps.image-tag.outputs.environment }} environment"
+        token: ${{ secrets.GITHUB_TOKEN }}
