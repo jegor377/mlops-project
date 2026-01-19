@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.8.3](https://github.com/jegor377/mlops-project/compare/server@0.8.2...server@0.8.3) (2026-01-19)
+
+
+### Bug Fixes
+
+* **server:** fixes docker issue in server ([db9a2c4](https://github.com/jegor377/mlops-project/commit/db9a2c466652594a8736407716ea05c69df4150f))
+* **server:** fixes docker issue in server ([2b67823](https://github.com/jegor377/mlops-project/commit/2b67823870da79afb9c6ab8d062c74d332ac8c3a))
+
+
+### Chores
+
+* upgrade uv ([1112423](https://github.com/jegor377/mlops-project/commit/111242337c6a537f52c14fb5f130d7f150a35b33))
+
 ## [0.8.2](https://github.com/jegor377/mlops-project/compare/server@0.8.1...server@0.8.2) (2026-01-14)
 
 
