@@ -1,6 +1,4 @@
 deployments:
   - path: gateway-api-crds
-    applyOptions:
-      serverSideApply: true
     waitReadiness: true   # CRDs established
   - path: traefik
