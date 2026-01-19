@@ -33,11 +33,11 @@ jobs:
       run: |
         if [[ "${{ github.ref_type }}" == "tag" ]]; then
           IMAGE_TAG=$(task -s build-push-wf:utils:generate-version-tag -- server)
-          VERSION = $(task -s build-push-wf:utils:generate-version -- server)
+          VERSION=$(task -s build-push-wf:utils:generate-version -- server)
           echo "environment=production" >> $GITHUB_OUTPUT
         else # if on push to main branch
           IMAGE_TAG=$(task -s build-push-wf:utils:generate-extended-version-tag -- server)
-          VERSION = $(task -s build-push-wf:utils:generate-extended-version -- server)
+          VERSION=$(task -s build-push-wf:utils:generate-extended-version -- server)
           echo "environment=staging" >> $GITHUB_OUTPUT
         fi
         echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
