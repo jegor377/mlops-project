@@ -4,6 +4,6 @@ vars:
 deployments:
   - path: namespaces
   - barrier: true
-  - path: third-party
+  - include: third-party
   - barrier: true
   - include: services
