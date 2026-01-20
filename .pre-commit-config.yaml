@@ -3,7 +3,9 @@ repos:
     rev: v6.0.0
     hooks:
     -   id: end-of-file-fixer
+        exclude: ^k8s/kluctl/.helm-charts/
     -   id: trailing-whitespace
+        exclude: ^k8s/kluctl/.helm-charts/
 -   repo: local
     hooks:
     -   id: kluctl-validate
