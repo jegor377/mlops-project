@@ -7,7 +7,7 @@ spec:
   gatewayClassName: traefik
   listeners:
   - protocol: HTTP
-    port: 8000
+    port: 80
     name: http
     allowedRoutes:
       namespaces:
