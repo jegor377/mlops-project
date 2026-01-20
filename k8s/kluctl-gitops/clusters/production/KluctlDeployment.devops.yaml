@@ -1,7 +1,7 @@
 apiVersion: gitops.kluctl.io/v1beta1
 kind: KluctlDeployment
 metadata:
-  name: ml-server-delpoyment
+  name: ml-server-deployment
   namespace: kluctl-gitops
 spec:
   interval: 5m
