@@ -1,3 +1,4 @@
 resources:
   - Namespace.yaml
   - helm-rendered.yaml
+  - MetalLBConfig.yaml
