@@ -1,0 +1,2 @@
+metalLBConfig:
+  addressPool: 172.18.255.201-172.18.255.250

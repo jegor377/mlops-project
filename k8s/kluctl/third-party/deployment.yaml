@@ -1,3 +1,6 @@
+vars:
+  - file: metallb/config/{{ args.environment }}.yaml
+
 deployments:
   - path: gateway-api-crds
     waitReadiness: true   # CRDs established
