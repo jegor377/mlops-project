@@ -1,0 +1,14 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-server
+  namespace: mlops-project
+  labels:
+    app: ml-server
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+        - name: mlops-container
+          image: igorsantarek/ml_server:0.8.2-0010-g2742f64
