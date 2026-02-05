@@ -12,6 +12,9 @@ includes:
   k8s:
     taskfile: k8s/Taskfile.yaml
     dir: k8s
+  utils:
+    taskfile: utils/Taskfile.yaml
+    dir: utils
   build-push-wf:
     taskfile: .github/workflows/build-push/Taskfile.yml
   test-wf:

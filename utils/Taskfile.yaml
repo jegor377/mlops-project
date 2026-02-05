@@ -57,3 +57,10 @@ tasks:
     cmds:
       - |
         echo "{{.IMAGE_REPO}}:{{.VERSION}}"
+
+  update-image-tags:
+    desc: "Update image tags in Kubernetes manifests"
+    dir: ../k8s/services/server/overlays/{{.ENVIRONMENT}}/patches
+    cmds:
+      - |
+        sed -i "s|igorsantarek/ml_server:[A-Za-z0-9\.\-]*$|igorsantarek/ml_server:{{.NEW_TAG}}|g" Deployment.yaml

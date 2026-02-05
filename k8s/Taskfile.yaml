@@ -1,25 +1,31 @@
 version: '3'
 
-includes:
-  kluctl:
-    taskfile: kluctl/Taskfile.yml
-    dir: kluctl
-  kluctl-gitops:
-    taskfile: kluctl-gitops/Taskfile.yml
-    dir: kluctl-gitops
-
 tasks:
   create-clusters:
     desc: "Create the kind clusters"
     cmds:
-      - kind create cluster --config kind-config.yaml --name kind-staging
-      - kind create cluster --config kind-config.yaml --name kind-production
+      - kind create cluster --config kind-config.yaml
+      - task: install-argocd
+      - task: apply-crds
+      - task: apply-root-app
   delete-clusters:
     desc: "Delete the kind clusters"
     cmds:
-      - kind delete cluster --name kind-staging
-      - kind delete cluster --name kind-production
+      - kind delete cluster
   port-forward:
     desc: "Port forward the Traefik gateway to localhost"
     cmds:
       - kubectl -n traefik port-forward svc/traefik 80
+  install-argocd:
+    desc: "Install Argo CD in the cluster"
+    cmds:
+      - kubectl create namespace argocd
+      - kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+  apply-crds:
+    desc: "Apply the CRDs for Argo CD applications"
+    cmds:
+      - kubectl apply -f crds/gateway-api-crds.yaml
+  apply-root-app:
+    desc: "Apply the root Argo CD application"
+    cmds:
+      - kubectl apply -f argocd/root-app.yaml

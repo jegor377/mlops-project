@@ -32,12 +32,12 @@ jobs:
       id: image-tag
       run: |
         if [[ "${{ github.ref_type }}" == "tag" ]]; then
-          IMAGE_TAG=$(task -s build-push-wf:utils:generate-version-tag -- server)
-          VERSION=$(task -s build-push-wf:utils:generate-version -- server)
+          IMAGE_TAG=$(task -s utils:generate-version-tag -- server)
+          VERSION=$(task -s utils:generate-version -- server)
           echo "environment=production" >> $GITHUB_OUTPUT
         else # if on push to main branch
-          IMAGE_TAG=$(task -s build-push-wf:utils:generate-extended-version-tag -- server)
-          VERSION=$(task -s build-push-wf:utils:generate-extended-version -- server)
+          IMAGE_TAG=$(task -s utils:generate-extended-version-tag -- server)
+          VERSION=$(task -s utils:generate-extended-version -- server)
           echo "environment=staging" >> $GITHUB_OUTPUT
         fi
         echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
@@ -54,21 +54,12 @@ jobs:
         tags: ${{ steps.image-tag.outputs.image_tag }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
-    - name: Figure out environment file
-      id: env-file
-      run: |
-        if [[ "${{ steps.image-tag.outputs.environment }}" == "production" ]]; then
-          echo "env_file=k8s/kluctl/services/server/config/production.yaml" >> $GITHUB_OUTPUT
-        else
-          echo "env_file=k8s/kluctl/services/server/config/staging.yaml" >> $GITHUB_OUTPUT
-        fi
-    - name: YAML Update Action
+    - name: Update Kubernetes manifests with new image tag
       if: ${{ !env.ACT }}
-      uses: fjogeleit/yaml-update-action@04ff6ec06568fd21197db746472e36cc425de850 #v0.16.1
+      run: |
+        task utils:update-image-tags NEW_TAG=${{ steps.image-tag.outputs.version }} ENVIRONMENT=${{ steps.image-tag.outputs.environment }}
+    - uses: stefanzweifel/git-auto-commit-action@v7
       with:
-        valueFile: ${{ steps.env-file.outputs.env_file }}
-        propertyPath: 'apiServer.version'
-        value: ${{ steps.image-tag.outputs.version }}
-        message: "chore: Update apiServer version to ${{ steps.image-tag.outputs.version }} on ${{ steps.image-tag.outputs.environment }} environment"
-        token: ${{ secrets.GITHUB_TOKEN }}
+        commit_message: "chore: Update image version to ${{ steps.image-tag.outputs.version }} on ${{ steps.image-tag.outputs.environment }} environment"
         branch: main
+        file_pattern: "k8s/services/server/overlays/*/patches/Deployment.yaml"
