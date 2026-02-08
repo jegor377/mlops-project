@@ -7,7 +7,7 @@ spec:
   project: platform
   source:
     repoURL: https://github.com/jegor377/mlops-project.git
-    path: k8s/argocd
+    path: k8s/argocd/apps
     targetRevision: main
   destination:
     server: https://kubernetes.default.svc
