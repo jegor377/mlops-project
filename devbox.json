@@ -13,7 +13,8 @@
     "tilt@latest",
     "act@latest",
     "gh@latest",
-    "kluctl@latest"
+    "kluctl@latest",
+    "argocd@latest"
   ],
   "shell": {
     "init_hook": [
