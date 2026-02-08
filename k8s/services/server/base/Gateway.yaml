@@ -2,7 +2,6 @@ apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
   name: ml-server-gw
-  namespace: mlops-project
 spec:
   gatewayClassName: traefik
   listeners:
