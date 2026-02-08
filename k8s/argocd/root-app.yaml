@@ -6,7 +6,7 @@ metadata:
 spec:
   project: platform
   source:
-    repoURL: https://github.com/jegor377/mlops-project
+    repoURL: https://github.com/jegor377/mlops-project.git
     path: k8s/argocd
     targetRevision: main
   destination:
