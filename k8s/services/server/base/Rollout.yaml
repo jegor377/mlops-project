@@ -1,11 +1,11 @@
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: ml-server
   labels:
     app: ml-server
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: ml-server
@@ -18,8 +18,8 @@ spec:
         - name: mlops-container
           image: igorsantarek/ml_server:latest
           ports:
-          - containerPort: 8000
-            protocol: TCP
+            - containerPort: 8000
+              protocol: TCP
           env:
           - name: HF_HOME
             value: /tmp/.cache
@@ -49,3 +49,12 @@ spec:
         runAsUser: 1001
         runAsGroup: 1001
         runAsNonRoot: true
+  strategy:
+    canary: #Indicates that the rollout should use the Canary strategy
+      maxSurge: '25%'
+      maxUnavailable: 0
+      steps:
+        - setWeight: 33
+        - pause: {} # pause indefinitely
+        - setWeight: 66
+        - pause: { duration: 10s }

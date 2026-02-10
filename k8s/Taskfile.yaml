@@ -6,8 +6,9 @@ tasks:
     cmds:
       - kind create cluster --config kind-config.yaml
       - task: install-argocd
+      - task: install-argo-rollouts
       - task: apply-crds
-      - task: apply-root-app
+      - printf "Next steps:\n\ntask k8s:install-argo-rollouts-plugin\ntask k8s:apply-root-app\ntask k8s:get-argocd-pw\ntask k8s:open-argocd-ui\n"
   delete-cluster:
     desc: "Delete the kind cluster"
     cmds:
@@ -21,6 +22,18 @@ tasks:
     cmds:
       - kubectl create namespace argocd
       - kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+  install-argo-rollouts:
+    desc: "Install Argo Rollouts in the cluster"
+    cmds:
+      - kubectl create namespace argo-rollouts
+      - kubectl apply -n argo-rollouts -f https://github.com/argoproj/argo-rollouts/releases/latest/download/install.yaml
+  install-argo-rollouts-plugin:
+    desc: "Install the Argo Rollouts plugin for Argo CD"
+    cmds:
+      - curl -LO https://github.com/argoproj/argo-rollouts/releases/latest/download/kubectl-argo-rollouts-linux-amd64
+      - chmod +x ./kubectl-argo-rollouts-linux-amd64
+      - sudo mv ./kubectl-argo-rollouts-linux-amd64 /usr/local/bin/kubectl-argo-rollouts
+      - kubectl argo rollouts version
   apply-crds:
     desc: "Apply the CRDs for Argo CD applications"
     cmds:

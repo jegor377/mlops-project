@@ -3,5 +3,10 @@ kind: Kustomization
 resources:
   - ../../base
 patches:
-  - path: patches/Deployment.yaml
+  - target:
+      group: argoproj.io
+      version: v1alpha1
+      kind: Rollout
+      name: ml-server
+    path: patches/Rollout.yaml
   - path: patches/HTTPRoute.yaml
