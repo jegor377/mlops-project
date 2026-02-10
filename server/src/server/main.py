@@ -27,3 +27,7 @@ async def get_version():
 @app.get("/")
 async def root():
     return {"message": "Welcome to the ML model server!"}
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy"}
