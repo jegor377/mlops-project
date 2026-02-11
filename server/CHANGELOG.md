@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.9.0](https://github.com/jegor377/mlops-project/compare/server@0.8.3...server@0.9.0) (2026-02-11)
+
+
+### Features
+
+* adds health endpoint ([b0e7433](https://github.com/jegor377/mlops-project/commit/b0e74337330d6a44f3ddd5c97450ee87670f51f5))
+
+
+### Bug Fixes
+
+* **server:** fix utils taskfile ([68e8a21](https://github.com/jegor377/mlops-project/commit/68e8a2169abb07b9f1dc8f65b90fbdb370c59ba1))
+* **server:** fixes ci git push ([2c87b29](https://github.com/jegor377/mlops-project/commit/2c87b29e02ab242151679e302013a000adc522e0))
+* **server:** fixes ci image version update ([ce50a31](https://github.com/jegor377/mlops-project/commit/ce50a3151f30eb7b8bf9a8fb259c39516a1d2c14))
+
 ## [0.8.3](https://github.com/jegor377/mlops-project/compare/server@0.8.2...server@0.8.3) (2026-01-19)
 
 
