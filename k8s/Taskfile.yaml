@@ -52,3 +52,7 @@ tasks:
     desc: "Open the Argo CD UI in the browser"
     cmds:
       - kubectl port-forward svc/argocd-server -n argocd 8080:443
+  open-argo-rollouts-ui:
+    desc: "Open the Argo Rollouts UI in the browser"
+    cmds:
+      - kubectl argo rollouts dashboard
