@@ -1,3 +1,3 @@
 - op: replace
   path: /spec/template/spec/containers/0/image
-  value: igorsantarek/ml_server:0.8.3-0025-g2c87b29
+  value: igorsantarek/ml_server:0.8.3-0027-g7ffadfa
