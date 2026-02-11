@@ -64,3 +64,4 @@ tasks:
     cmds:
       - |
         sed -i "s|igorsantarek/ml_server:[A-Za-z0-9\.\-]*$|igorsantarek/ml_server:{{.NEW_TAG}}|g" Rollout.yaml
+      - git --no-pager diff  Rollout.yaml

@@ -62,4 +62,4 @@ jobs:
       with:
         commit_message: "chore: Update image version to ${{ steps.image-tag.outputs.version }} on ${{ steps.image-tag.outputs.environment }} environment"
         branch: main
-        file_pattern: "k8s/services/server/overlays/*/patches/Deployment.yaml"
+        file_pattern: "k8s/services/server/overlays/*/patches/Rollout.yaml"
