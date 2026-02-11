@@ -29,5 +29,5 @@ async def root():
     return {"message": "Welcome to the ML model server!"}
 
 @app.get("/health")
-async def health(): # informs about the app's health status
+async def health():
     return {"status": "healthy"}
