@@ -20,7 +20,7 @@ tasks:
     vars:
       SERVICE_RELEASE_TAG: "{{.CLI_ARGS}}"
       VERSION:
-        sh: task -s utils:generate-version -- {{.SERVICE_RELEASE_TAG}}
+        sh: task -s generate-version -- {{.SERVICE_RELEASE_TAG}}
     cmds:
       - |
         echo "{{.IMAGE_REPO}}:{{.VERSION}}"
@@ -30,7 +30,7 @@ tasks:
     vars:
       SERVICE_RELEASE_TAG: "{{.CLI_ARGS}}"
       BASE_VERSION:
-        sh: task -s utils:generate-version -- {{.SERVICE_RELEASE_TAG}}
+        sh: task -s generate-version -- {{.SERVICE_RELEASE_TAG}}
     cmds:
       - |
         set -euo pipefail
@@ -53,7 +53,7 @@ tasks:
     vars:
       SERVICE_RELEASE_TAG: "{{.CLI_ARGS}}"
       VERSION:
-        sh: task -s utils:generate-extended-version -- {{.SERVICE_RELEASE_TAG}}
+        sh: task -s generate-extended-version -- {{.SERVICE_RELEASE_TAG}}
     cmds:
       - |
         echo "{{.IMAGE_REPO}}:{{.VERSION}}"
