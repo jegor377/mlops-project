@@ -14,7 +14,8 @@
     "act@latest",
     "gh@latest",
     "kluctl@latest",
-    "argocd@latest"
+    "argocd@latest",
+    "google-cloud-sdk@latest"
   ],
   "shell": {
     "init_hook": [
