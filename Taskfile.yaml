@@ -19,6 +19,9 @@ includes:
     taskfile: .github/workflows/build-push/Taskfile.yml
   test-wf:
     taskfile: .github/workflows/test/Taskfile.yml
+  terraform:
+    taskfile: terraform/Taskfile.yml
+    dir: terraform
 
 tasks:
   tilt-up:
