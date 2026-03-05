@@ -197,54 +197,6 @@
         }
       }
     },
-    "google-cloud-sdk@latest": {
-      "last_modified": "2026-02-23T15:40:43Z",
-      "resolved": "github:NixOS/nixpkgs/80d901ec0377e19ac3f7bb8c035201e2e098cc97#google-cloud-sdk",
-      "source": "devbox-search",
-      "version": "552.0.0",
-      "systems": {
-        "aarch64-darwin": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/f6pq9rkqjf6xjh8si46wmc5f09qp1f80-google-cloud-sdk-552.0.0",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/f6pq9rkqjf6xjh8si46wmc5f09qp1f80-google-cloud-sdk-552.0.0"
-        },
-        "aarch64-linux": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/zrvrfcjc6kpfdix90bndz9yfwjm8k5jh-google-cloud-sdk-552.0.0",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/zrvrfcjc6kpfdix90bndz9yfwjm8k5jh-google-cloud-sdk-552.0.0"
-        },
-        "x86_64-darwin": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/kq57afqk51b3h7jl6vdiahxmjcg44hij-google-cloud-sdk-552.0.0",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/kq57afqk51b3h7jl6vdiahxmjcg44hij-google-cloud-sdk-552.0.0"
-        },
-        "x86_64-linux": {
-          "outputs": [
-            {
-              "name": "out",
-              "path": "/nix/store/cy8ax1v94c10a5rlgk1d7fnqpn7bcp06-google-cloud-sdk-552.0.0",
-              "default": true
-            }
-          ],
-          "store_path": "/nix/store/cy8ax1v94c10a5rlgk1d7fnqpn7bcp06-google-cloud-sdk-552.0.0"
-        }
-      }
-    },
     "k9s@latest": {
       "last_modified": "2025-11-23T21:50:36Z",
       "resolved": "github:NixOS/nixpkgs/ee09932cedcef15aaf476f9343d1dea2cb77e261#k9s",
@@ -623,6 +575,54 @@
             }
           ],
           "store_path": "/nix/store/zwvdwiw0zg5liz6lkkkqyab035parhld-python3-3.12.3"
+        }
+      }
+    },
+    "terraform@latest": {
+      "last_modified": "2026-02-23T15:40:43Z",
+      "resolved": "github:NixOS/nixpkgs/80d901ec0377e19ac3f7bb8c035201e2e098cc97#terraform",
+      "source": "devbox-search",
+      "version": "1.14.5",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/0ha9mpp5rjkx3nz8acmshprrf1aivxnm-terraform-1.14.5",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/0ha9mpp5rjkx3nz8acmshprrf1aivxnm-terraform-1.14.5"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/icp8hnz14lfnjm5065rrhsp3mn47645f-terraform-1.14.5",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/icp8hnz14lfnjm5065rrhsp3mn47645f-terraform-1.14.5"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/5kl61il281jx2zcfzys23m9yjkwjx2nv-terraform-1.14.5",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/5kl61il281jx2zcfzys23m9yjkwjx2nv-terraform-1.14.5"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/wvxpzvjpsq87bnjga22wv4w81x44a5d7-terraform-1.14.5",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/wvxpzvjpsq87bnjga22wv4w81x44a5d7-terraform-1.14.5"
         }
       }
     },
