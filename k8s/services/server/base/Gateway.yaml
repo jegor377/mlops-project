@@ -3,7 +3,7 @@ kind: Gateway
 metadata:
   name: ml-server-gw
 spec:
-  gatewayClassName: gke-l7-global-external-managed
+  gatewayClassName: gke-l7-regional-external-managed
   listeners:
   - protocol: HTTP
     port: 8000
