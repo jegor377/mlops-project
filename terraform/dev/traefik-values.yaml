@@ -1,0 +1,14 @@
+logs:
+  access:
+    enabled: true
+# we enable gateway-api features
+providers:
+  kubernetesGateway:
+    enabled: true
+    experimentalChannel: false
+# we disable gateway-api defaults because we want to provide our own
+gatewayClass:
+  enabled: false
+# we disable gateway-api defaults because we want to provide our own
+gateway:
+  enabled: false

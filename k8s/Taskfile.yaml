@@ -1,18 +1,6 @@
 version: '3'
 
 tasks:
-  create-cluster:
-    desc: "Create the kind cluster"
-    cmds:
-      - kind create cluster --config kind-config.yaml
-      - task: install-argocd
-      - task: install-argo-rollouts
-      - task: apply-crds
-      - printf "Next steps:\n\ntask k8s:install-argo-rollouts-plugin\ntask k8s:apply-root-app\ntask k8s:get-argocd-pw\ntask k8s:open-argocd-ui\n"
-  delete-cluster:
-    desc: "Delete the kind cluster"
-    cmds:
-      - kind delete cluster
   port-forward:
     desc: "Port forward the Traefik gateway to localhost"
     cmds:
@@ -43,7 +31,7 @@ tasks:
     cmds:
       - kubectl apply -f argocd/app-project-ml-server.yaml
       - kubectl apply -f argocd/root-app.yaml
-  install-resources:
+  install-gke-resources:
     desc: "Just install the cluster and Argo CD without applying the root app"
     cmds:
       - task: install-argocd
