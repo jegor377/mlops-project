@@ -4,4 +4,3 @@ metadata:
   name: traefik
 spec:
   controllerName: traefik.io/gateway-controller
----
