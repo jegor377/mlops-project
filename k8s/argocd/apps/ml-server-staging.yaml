@@ -3,8 +3,6 @@ kind: Application
 metadata:
   name: ml-server-staging
   namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: "2"
 spec:
   project: ml-server
   source:

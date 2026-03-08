@@ -1,0 +1,24 @@
+# https://taskfile.dev
+
+version: '3'
+
+tasks:
+  plan:
+    desc: "Plan infrastructure changes using Terraform"
+    cmds:
+      - terraform init
+      - terraform plan
+  apply:
+    desc: "Apply infrastructure changes using Terraform"
+    cmds:
+      - terraform init
+      - terraform apply -auto-approve
+  destroy:
+    desc: "Destroy infrastructure using Terraform"
+    cmds:
+      - terraform init
+      - terraform destroy
+  fmt:
+    desc: "Format Terraform code"
+    cmds:
+      - terraform fmt
