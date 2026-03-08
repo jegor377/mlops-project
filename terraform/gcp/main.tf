@@ -81,3 +81,7 @@ data "google_secret_manager_secret_version" "ml-server-github-argocd-token" {
   secret  = "ml-server-github-argocd-token"
   version = "latest"
 }
+
+locals {
+  github_pat = sensitive(data.google_secret_manager_secret_version.ml-server-github-argocd-token.secret_data)
+}

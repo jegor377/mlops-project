@@ -11,13 +11,8 @@ provider "kubectl" {
   load_config_file = false # <-- important: ignore local kubeconfig entirely
 }
 
-resource "kubectl_manifest" "gateway_api_crds" {
-  depends_on = [google_container_cluster.default]
-  yaml_body  = file("${path.module}/../../k8s/crds/gateway-api-crds.yaml")
-}
-
 resource "helm_release" "argocd" {
-  depends_on       = [kubectl_manifest.gateway_api_crds]
+  depends_on       = [google_container_cluster.default]
   name             = "argocd"
   repository       = "https://argoproj.github.io/argo-helm"
   chart            = "argo-cd"
@@ -50,20 +45,21 @@ resource "kubectl_manifest" "root-app" {
   yaml_body  = file("${path.module}/../../k8s/argocd/root-app.yaml")
 }
 
-resource "kubectl_manifest" "argocd_repo_secret" {
+resource "kubernetes_secret_v1" "argocd_repo_secret" {
   depends_on = [helm_release.argocd]
-  yaml_body = <<-YAML
-    apiVersion: v1
-    kind: Secret
-    metadata:
-      name: ml-server-repo
-      namespace: argocd
-      labels:
-        argocd.argoproj.io/secret-type: repository
-    stringData:
-      type: git
-      url: https://github.com/jegor377/mlops-project.git
-      password: ${data.google_secret_manager_secret_version.ml-server-github-argocd-token.secret_data}
-      username: jegor377
-  YAML
+
+  metadata {
+    name      = "ml-server-repo"
+    namespace = "argocd"
+    labels = {
+      "argocd.argoproj.io/secret-type" = "repository"
+    }
+  }
+
+  data = {
+    type     = "git"
+    url      = "https://github.com/jegor377/mlops-project.git"
+    password = local.github_pat
+    username = "jegor377"
+  }
 }

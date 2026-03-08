@@ -44,7 +44,7 @@ resource "kind_cluster" "default" {
 
 resource "kubectl_manifest" "gateway_api_crds" {
   depends_on = [kind_cluster.default]
-  yaml_body  = file("${path.module}/../../k8s/crds/gateway-api-crds.yaml")
+  yaml_body  = file("${path.module}/manifests/gateway-api-crds.yaml")
 }
 
 resource "helm_release" "metallb" {

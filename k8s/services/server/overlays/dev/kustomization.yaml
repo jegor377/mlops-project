@@ -2,12 +2,28 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
   - ../../base
+  - manifests/Namespace.yaml
 patches:
+  - path: patches/Service.yaml
+    target:
+      version: v1
+      kind: Service
+      name: ml-server-svc
   - path: patches/Gateway.yaml
-  - target:
+    target:
+      group: gateway.networking.k8s.io
+      version: v1
+      kind: Gateway
+      name: ml-server-gw
+  - path: patches/Rollout.yaml
+    target:
       group: argoproj.io
       version: v1alpha1
       kind: Rollout
       name: ml-server
-    path: patches/Rollout.yaml
   - path: patches/HTTPRoute.yaml
+    target:
+      group: gateway.networking.k8s.io
+      version: v1
+      kind: HTTPRoute
+      name: ml-server-route

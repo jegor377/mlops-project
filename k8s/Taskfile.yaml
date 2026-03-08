@@ -4,7 +4,11 @@ tasks:
   port-forward:
     desc: "Port forward the Traefik gateway to localhost"
     cmds:
-      - kubectl -n traefik port-forward svc/traefik 80
+      - kubectl -n traefik-system port-forward svc/traefik 80
+  apply-dev-resources:
+    desc: "Apply development resources to the cluster"
+    cmds:
+      - kubectl apply -k services/server/overlays/dev
   install-argo-rollouts-plugin:
     desc: "Install the Argo Rollouts plugin for Argo CD"
     cmds:
