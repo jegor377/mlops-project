@@ -3,4 +3,10 @@ kind: Gateway
 metadata:
   name: ml-server-gw
 spec:
-  gatewayClassName: traefik
+  listeners:
+    - name: http
+      port: 8000
+      protocol: HTTP
+      allowedRoutes:
+        namespaces:
+          from: Same
