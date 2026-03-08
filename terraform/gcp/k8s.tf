@@ -37,7 +37,7 @@ resource "helm_release" "argo_rollouts" {
 
 resource "kubectl_manifest" "ml-server-project" {
   depends_on = [helm_release.argocd, helm_release.argo_rollouts]
-  yaml_body  = file("${path.module}/../../k8s/argocd/ml-server-project.yaml")
+  yaml_body  = file("${path.module}/../../k8s/argocd/app-project-ml-server.yaml")
 }
 
 resource "kubectl_manifest" "root-app" {
