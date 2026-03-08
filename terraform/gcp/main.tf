@@ -63,4 +63,16 @@ resource "google_container_cluster" "default" {
     ]
     machine_type = "e2-standard-2"
   }
+  gateway_api_config {
+    channel = "CHANNEL_STANDARD"
+  }
+}
+
+resource "google_compute_subnetwork" "proxy_subnet" {
+  name          = "ml-server-proxy-subnet"
+  ip_cidr_range = "10.0.16.0/24"
+  network       = google_compute_network.vpc_network.id
+  region        = var.region
+  purpose       = "REGIONAL_MANAGED_PROXY"
+  role          = "ACTIVE"
 }
