@@ -13,10 +13,19 @@ tasks:
     cmds:
       - terraform init
       - terraform apply -auto-approve
+  predestroy:
+    desc: "Clean up GKE-managed resources before terraform destroy"
+    cmds:
+      - kubectl delete applications --all -n argocd --ignore-not-found --wait=true
+      - kubectl delete gateway --all -A --ignore-not-found --wait=true
+      - kubectl delete namespace mlops-project-production --ignore-not-found --wait=true
+      - kubectl delete namespace mlops-project-staging --ignore-not-found --wait=true
+      - sleep 30
   destroy:
     desc: "Destroy infrastructure using Terraform"
     cmds:
       - terraform init
+      - task: predestroy
       - terraform destroy
   fmt:
     desc: "Format Terraform code"
