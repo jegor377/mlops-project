@@ -76,3 +76,8 @@ resource "google_compute_subnetwork" "proxy_subnet" {
   purpose       = "REGIONAL_MANAGED_PROXY"
   role          = "ACTIVE"
 }
+
+data "google_secret_manager_secret_version" "ml-server-github-argocd-token" {
+  secret  = "ml-server-github-argocd-token"
+  version = "latest"
+}

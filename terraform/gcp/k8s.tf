@@ -49,3 +49,21 @@ resource "kubectl_manifest" "root-app" {
   depends_on = [kubectl_manifest.ml-server-project, kubectl_manifest.platform-project]
   yaml_body  = file("${path.module}/../../k8s/argocd/root-app.yaml")
 }
+
+resource "kubectl_manifest" "argocd_repo_secret" {
+  depends_on = [helm_release.argocd]
+  yaml_body = <<-YAML
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: ml-server-repo
+      namespace: argocd
+      labels:
+        argocd.argoproj.io/secret-type: repository
+    stringData:
+      type: git
+      url: https://github.com/jegor377/mlops-project.git
+      password: ${data.google_secret_manager_secret_version.ml-server-github-argocd-token.secret_data}
+      username: jegor377
+  YAML
+}
