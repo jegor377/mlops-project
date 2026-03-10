@@ -17,53 +17,53 @@ resource "kubernetes_namespace_v1" "argocd" {
   }
 }
 
-data "http" "argocd_manifest" {
-  url = "https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml"
-}
-
-data "kubectl_file_documents" "argocd" {
-  content = data.http.argocd_manifest.response_body
-}
-
-resource "kubectl_manifest" "argocd" {
-  for_each  = data.kubectl_file_documents.argocd.manifests
-  yaml_body = each.value
-
-  server_side_apply = true # --server-side
-  force_conflicts   = true # --force-conflicts
-
-  depends_on = [kubernetes_namespace_v1.argocd]
-}
-
-
-resource "kubernetes_namespace_v1" "argo-rollout" {
+resource "kubernetes_namespace_v1" "argo-rollouts" {
   metadata {
-    name = "argo-rollout"
+    name = "argo-rollouts"
   }
 }
 
-data "http" "argo-rollouts_manifest" {
-  url = "https://github.com/argoproj/argo-rollouts/releases/latest/download/install.yaml"
+resource "null_resource" "argocd" {
+  depends_on = [ kubernetes_namespace_v1.argocd ]
+
+  triggers = {
+    always_run = timestamp()
+  }
+
+  provisioner "local-exec" {
+    command = "kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.3/manifests/install.yaml"
+  }
+
+  provisioner "local-exec" {
+    when    = destroy
+    command = "kubectl delete -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.3/manifests/install.yaml"
+  }
 }
 
-data "kubectl_file_documents" "argo-rollouts" {
-  content = data.http.argo-rollouts_manifest.response_body
-}
+resource "null_resource" "argo-rollouts" {
+  depends_on = [ null_resource.argocd, kubernetes_namespace_v1.argo-rollouts ]
 
-resource "kubectl_manifest" "argo-rollouts" {
-  for_each  = data.kubectl_file_documents.argo-rollouts.manifests
-  yaml_body = each.value
+  triggers = {
+    always_run = timestamp()
+  }
 
-  depends_on = [kubectl_manifest.argocd, kubernetes_namespace_v1.argo-rollout]
+  provisioner "local-exec" {
+    command = "kubectl apply -n argo-rollouts -f https://github.com/argoproj/argo-rollouts/releases/download/v1.8.4/install.yaml"
+  }
+
+  provisioner "local-exec" {
+    when    = destroy
+    command = "kubectl delete -n argo-rollouts -f https://github.com/argoproj/argo-rollouts/releases/download/v1.8.4/install.yaml"
+  }
 }
 
 resource "kubectl_manifest" "ml-server-project" {
-  depends_on = [kubectl_manifest.argocd, kubectl_manifest.argo-rollouts]
+  depends_on = [null_resource.argocd, null_resource.argo-rollouts]
   yaml_body  = file("${path.module}/../../k8s/argocd/app-project-ml-server.yaml")
 }
 
 resource "kubectl_manifest" "platform-project" {
-  depends_on = [kubectl_manifest.argocd, kubectl_manifest.argo-rollouts]
+  depends_on = [null_resource.argocd, null_resource.argo-rollouts]
   yaml_body  = file("${path.module}/../../k8s/argocd/app-project-platform.yaml")
 }
 
@@ -73,7 +73,7 @@ resource "kubectl_manifest" "root-app" {
 }
 
 resource "kubernetes_secret_v1" "argocd_repo_secret" {
-  depends_on = [kubectl_manifest.argocd]
+  depends_on = [null_resource.argocd]
 
   metadata {
     name      = "ml-server-repo"
