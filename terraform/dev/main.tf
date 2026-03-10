@@ -47,36 +47,15 @@ resource "kubectl_manifest" "gateway_api_crds" {
   yaml_body  = file("${path.module}/manifests/gateway-api-crds.yaml")
 }
 
-resource "helm_release" "metallb" {
-  depends_on       = [kubectl_manifest.gateway_api_crds]
-  name             = "metallb"
-  repository       = "https://metallb.github.io/metallb"
-  chart            = "metallb"
-  version          = "0.15.3"
-  create_namespace = true
-  namespace        = "metallb-system"
-  wait             = true
-  timeout          = 120
-}
-
-resource "kubectl_manifest" "ipaddress_pool" {
-  depends_on = [helm_release.metallb]
-  yaml_body  = file("${path.module}/manifests/ipaddresspool.yaml")
-}
-
-resource "kubectl_manifest" "l2advertisement" {
-  depends_on = [helm_release.metallb, kubectl_manifest.ipaddress_pool]
-  yaml_body  = file("${path.module}/manifests/l2advertisement.yaml")
-}
-
 resource "helm_release" "traefik" {
-  depends_on       = [kind_cluster.default, kubectl_manifest.ipaddress_pool, kubectl_manifest.l2advertisement]
+  depends_on       = [kind_cluster.default]
   name             = "traefik"
   repository       = "https://traefik.github.io/charts"
   chart            = "traefik"
   version          = "38.0.2"
   create_namespace = true
   namespace        = "traefik-system"
+  wait             = false
 
   values = [
     file("${path.module}/traefik-values.yaml")
@@ -84,6 +63,6 @@ resource "helm_release" "traefik" {
 }
 
 resource "kubectl_manifest" "traefik_config" {
-  depends_on = [helm_release.traefik, kubectl_manifest.ipaddress_pool, kubectl_manifest.l2advertisement]
+  depends_on = [helm_release.traefik]
   yaml_body  = file("${path.module}/manifests/GatewayClass.yaml")
 }
