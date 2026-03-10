@@ -42,7 +42,7 @@ resource "kubernetes_namespace_v1" "argo-rollout" {
   }
 }
 
-data "http" "argo-rollout_manifest" {
+data "http" "argo-rollouts_manifest" {
   url = "https://github.com/argoproj/argo-rollouts/releases/latest/download/install.yaml"
 }
 
