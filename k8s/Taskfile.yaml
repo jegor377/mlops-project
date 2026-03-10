@@ -33,3 +33,15 @@ tasks:
     desc: "Open the Argo Rollouts UI in the browser"
     cmds:
       - kubectl argo rollouts dashboard
+  run-lb-gw:
+    desc: "Run the Cloud Provider Kind load balancer for Gateway API"
+    cmds:
+      - cloud-provider-kind --gateway-channel standard
+  test-dev-env-ping:
+    vars:
+      IP: "172.18.0.5"
+    desc: "Test the ping endpoint of the ML server"
+    cmds:
+      - |
+        curl -H "Host: ml-server-dev" http://{{.IP}}/ping
+        printf "\n"

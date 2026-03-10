@@ -26,34 +26,16 @@ resource "kubernetes_namespace_v1" "argo-rollouts" {
 resource "null_resource" "argocd" {
   depends_on = [ kubernetes_namespace_v1.argocd ]
 
-  triggers = {
-    always_run = timestamp()
-  }
-
   provisioner "local-exec" {
     command = "kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.3/manifests/install.yaml"
-  }
-
-  provisioner "local-exec" {
-    when    = destroy
-    command = "kubectl delete -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.3/manifests/install.yaml"
   }
 }
 
 resource "null_resource" "argo-rollouts" {
   depends_on = [ null_resource.argocd, kubernetes_namespace_v1.argo-rollouts ]
 
-  triggers = {
-    always_run = timestamp()
-  }
-
   provisioner "local-exec" {
     command = "kubectl apply -n argo-rollouts -f https://github.com/argoproj/argo-rollouts/releases/download/v1.8.4/install.yaml"
-  }
-
-  provisioner "local-exec" {
-    when    = destroy
-    command = "kubectl delete -n argo-rollouts -f https://github.com/argoproj/argo-rollouts/releases/download/v1.8.4/install.yaml"
   }
 }
 
