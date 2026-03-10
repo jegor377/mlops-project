@@ -11,7 +11,7 @@ provider "kubectl" {
   load_config_file = false # <-- important: ignore local kubeconfig entirely
 }
 
-resource "kubernetes_namespace" "argocd" {
+resource "kubernetes_namespace_v1" "argocd" {
   metadata {
     name = "argocd"
   }
@@ -32,29 +32,29 @@ resource "kubectl_manifest" "argocd" {
   server_side_apply = true # --server-side
   force_conflicts   = true # --force-conflicts
 
-  depends_on = [kubernetes_namespace.argocd]
+  depends_on = [kubernetes_namespace_v1.argocd]
 }
 
 
-resource "kubernetes_namespace" "argocd-rollouts" {
+resource "kubernetes_namespace_v1" "argo-rollout" {
   metadata {
-    name = "argocd-rollouts"
+    name = "argo-rollout"
   }
 }
 
-data "http" "argocd-rollouts_manifest" {
+data "http" "argo-rollout_manifest" {
   url = "https://github.com/argoproj/argo-rollouts/releases/latest/download/install.yaml"
 }
 
-data "kubectl_file_documents" "argocd-rollouts" {
-  content = data.http.argocd-rollouts_manifest.response_body
+data "kubectl_file_documents" "argo-rollouts" {
+  content = data.http.argo-rollouts_manifest.response_body
 }
 
-resource "kubectl_manifest" "argocd-rollouts" {
-  for_each  = data.kubectl_file_documents.argocd-rollouts.manifests
+resource "kubectl_manifest" "argo-rollouts" {
+  for_each  = data.kubectl_file_documents.argo-rollouts.manifests
   yaml_body = each.value
 
-  depends_on = [kubectl_manifest.argocd, kubernetes_namespace.argocd-rollouts]
+  depends_on = [kubectl_manifest.argocd, kubernetes_namespace_v1.argo-rollout]
 }
 
 resource "kubectl_manifest" "ml-server-project" {
