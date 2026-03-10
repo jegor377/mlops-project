@@ -16,8 +16,7 @@
     "kluctl@latest",
     "argocd@latest",
     "terraform@latest",
-    "path:gcloud#google-cloud-sdk",
-    "cloud-provider-kind@latest"
+    "path:gcloud#google-cloud-sdk"
   ],
   "shell": {
     "init_hook": [
