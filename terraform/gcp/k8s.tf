@@ -29,8 +29,8 @@ resource "kubectl_manifest" "argocd" {
   for_each  = data.kubectl_file_documents.argocd.manifests
   yaml_body = each.value
 
-  server_side_apply = true   # --server-side
-  force_conflicts   = true   # --force-conflicts
+  server_side_apply = true # --server-side
+  force_conflicts   = true # --force-conflicts
 
   depends_on = [kubernetes_namespace.argocd]
 }
