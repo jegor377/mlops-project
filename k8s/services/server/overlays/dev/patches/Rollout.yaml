@@ -14,6 +14,3 @@
   value:
     matchLabels:
       app: ml-server
-- op: add
-  path: /metadata/namespace
-  value: ml-server-dev
