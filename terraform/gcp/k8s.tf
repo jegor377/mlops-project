@@ -11,41 +11,33 @@ provider "kubectl" {
   load_config_file = false # <-- important: ignore local kubeconfig entirely
 }
 
-resource "kubernetes_namespace_v1" "argocd" {
-  metadata {
-    name = "argocd"
-  }
+resource "helm_release" "argocd" {
+  depends_on       = [google_container_cluster.default]
+  name             = "argocd"
+  repository       = "https://argoproj.github.io/argo-helm"
+  chart            = "argo-cd"
+  namespace        = "argocd"
+  create_namespace = true
+  version          = "9.4.10"
 }
 
-resource "kubernetes_namespace_v1" "argo-rollouts" {
-  metadata {
-    name = "argo-rollouts"
-  }
-}
-
-resource "null_resource" "argocd" {
-  depends_on = [ kubernetes_namespace_v1.argocd ]
-
-  provisioner "local-exec" {
-    command = "kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.3/manifests/install.yaml"
-  }
-}
-
-resource "null_resource" "argo-rollouts" {
-  depends_on = [ null_resource.argocd, kubernetes_namespace_v1.argo-rollouts ]
-
-  provisioner "local-exec" {
-    command = "kubectl apply -n argo-rollouts -f https://github.com/argoproj/argo-rollouts/releases/download/v1.8.4/install.yaml"
-  }
+resource "helm_release" "argo_rollouts" {
+  depends_on       = [helm_release.argocd]
+  name             = "argo-rollouts"
+  repository       = "https://argoproj.github.io/argo-helm"
+  chart            = "argo-rollouts"
+  namespace        = "argo-rollouts"
+  create_namespace = true
+  version          = "2.40.6"
 }
 
 resource "kubectl_manifest" "ml-server-project" {
-  depends_on = [null_resource.argocd, null_resource.argo-rollouts]
+  depends_on = [helm_release.argocd, helm_release.argo_rollouts]
   yaml_body  = file("${path.module}/../../k8s/argocd/app-project-ml-server.yaml")
 }
 
 resource "kubectl_manifest" "platform-project" {
-  depends_on = [null_resource.argocd, null_resource.argo-rollouts]
+  depends_on = [helm_release.argocd, helm_release.argo_rollouts]
   yaml_body  = file("${path.module}/../../k8s/argocd/app-project-platform.yaml")
 }
 
@@ -55,7 +47,7 @@ resource "kubectl_manifest" "root-app" {
 }
 
 resource "kubernetes_secret_v1" "argocd_repo_secret" {
-  depends_on = [null_resource.argocd]
+  depends_on = [helm_release.argocd]
 
   metadata {
     name      = "ml-server-repo"
