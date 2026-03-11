@@ -45,3 +45,7 @@ tasks:
       - |
         curl -H "Host: ml-server-dev" http://{{.IP}}/ping
         printf "\n"
+  add-gcloud-kubectx:
+    desc: "Add gcloud context to kubectl"
+    cmds:
+      - gcloud container clusters get-credentials ml-server-cluster --zone us-central1-a
