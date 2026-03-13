@@ -50,6 +50,7 @@ resource "google_service_account" "default" {
 }
 
 resource "google_container_cluster" "default" {
+  depends_on          = [google_compute_subnetwork.proxy_subnet]
   name                = "ml-server-cluster"
   location            = var.zone
   initial_node_count  = 2
