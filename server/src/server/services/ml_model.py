@@ -13,7 +13,7 @@ class Model:
         inputs = self.tokenizer(
             texts, return_tensors="pt", truncation=True, padding=True, max_length=512
         )
-        with torch.no_grad():
+        with torch.inference_mode():
             outputs = self.model(**inputs)
         probabilities = torch.nn.functional.softmax(outputs.logits, dim=-1)
         sentiment_map = {
