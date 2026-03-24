@@ -10,6 +10,8 @@ from .services.ml_model import Model
 async def lifespan(app: FastAPI):
     # Load the ML model
     app.state.model = Model()
+    # Model warmup
+    app.state.model.predict(["I hate this book!"])
     yield
     # Clean up the ML models and release the resources
     del app.state.model
