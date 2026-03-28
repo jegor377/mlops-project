@@ -1,0 +1,105 @@
+import { useState } from "react";
+
+export default function LoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    console.log({ email, password });
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-8 sm:px-6">
+      {/* Card */}
+      <div className="w-full max-w-md bg-white border border-gray-100 rounded-2xl shadow-xl shadow-gray-200/60 p-6 sm:p-8  mt-16">
+        {/* Logo */}
+        <div className="flex items-center gap-2 mb-5 sm:mb-6 justify-center">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 bg-black rounded-lg flex items-center justify-center">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="white">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+            </svg>
+          </div>
+          <span className="font-semibold text-base sm:text-lg tracking-tight">Volta</span>
+        </div>
+
+        {/* Heading */}
+        <div className="text-center mb-5 sm:mb-6">
+          <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">Welcome back</h1>
+          <p className="text-xs sm:text-sm text-gray-400 mt-1">Sign in to your account</p>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
+          <div>
+            <label className="text-xs text-gray-500">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="mt-1 w-full px-3 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/80 focus:border-black transition"
+              placeholder="you@example.com"
+            />
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between">
+              <label className="text-xs text-gray-500">Password</label>
+              <a href="#" className="text-xs text-gray-400 hover:text-gray-600">
+                Forgot?
+              </a>
+            </div>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="mt-1 w-full px-3 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/80 focus:border-black transition"
+              placeholder="••••••••"
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full bg-black text-white text-sm font-medium py-2 sm:py-2.5 rounded-lg hover:bg-gray-800 transition"
+          >
+            Sign in
+          </button>
+        </form>
+
+        {/* Divider */}
+        <div className="my-5 sm:my-6 flex items-center gap-3">
+          <div className="flex-1 h-px bg-gray-100" />
+          <span className="text-xs text-gray-300">or</span>
+          <div className="flex-1 h-px bg-gray-100" />
+        </div>
+
+        {/* OAuth Buttons */}
+        <div className="space-y-2 sm:space-y-3">
+          <button className="w-full flex items-center justify-center gap-2 border border-gray-200 rounded-lg py-2 sm:py-2.5 text-sm hover:bg-gray-50 transition">
+            <svg width="16" height="16" viewBox="0 0 24 24">
+              <path fill="#EA4335" d="M12 10.2v3.6h5.1c-.2 1.2-1.4 3.5-5.1 3.5-3.1 0-5.6-2.6-5.6-5.8s2.5-5.8 5.6-5.8c1.8 0 3 .8 3.7 1.4l2.5-2.4C16.9 3.2 14.7 2.3 12 2.3 6.9 2.3 2.8 6.5 2.8 11.5S6.9 20.7 12 20.7c6.9 0 9.2-4.8 9.2-7.3 0-.5 0-.8-.1-1.2H12z" />
+            </svg>
+            Continue with Google
+          </button>
+
+          <button className="w-full flex items-center justify-center gap-2 border border-gray-200 rounded-lg py-2 sm:py-2.5 text-sm hover:bg-gray-50 transition">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 .5C5.7.5.9 5.3.9 11.6c0 4.9 3.2 9 7.6 10.4.6.1.8-.3.8-.6v-2.3c-3.1.7-3.7-1.5-3.7-1.5-.5-1.3-1.2-1.6-1.2-1.6-1-.7.1-.7.1-.7 1.1.1 1.7 1.2 1.7 1.2 1 .1.7 2.3 2.9 1.6.1-.7.4-1.2.7-1.5-2.5-.3-5.1-1.3-5.1-5.8 0-1.3.5-2.3 1.2-3.2-.1-.3-.5-1.6.1-3.3 0 0 1-.3 3.3 1.2a11.4 11.4 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.7.2 3 .1 3.3.8.9 1.2 2 1.2 3.2 0 4.5-2.6 5.5-5.1 5.8.4.3.7.9.7 1.9v2.8c0 .3.2.7.8.6 4.4-1.4 7.6-5.5 7.6-10.4C23.1 5.3 18.3.5 12 .5z" />
+            </svg>
+            Continue with GitHub
+          </button>
+        </div>
+
+        {/* Footer */}
+        <p className="text-xs text-gray-400 text-center mt-5 sm:mt-6">
+          Don't have an account?{" "}
+          <a href="#" className="text-gray-600 hover:text-gray-900">
+            Sign up
+          </a>
+        </p>
+      </div>
+    </div>
+  );
+}

@@ -5,6 +5,10 @@
     "server": {
       "release-type": "python",
       "component": "server"
+    },
+    "frontend": {
+      "release-type": "node",
+      "component": "frontend"
     }
   },
   "include-component-in-tag": true,

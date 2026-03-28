@@ -17,7 +17,8 @@
     "argocd@latest",
     "terraform@latest",
     "path:gcloud#google-cloud-sdk",
-    "cloud-provider-kind@latest"
+    "cloud-provider-kind@latest",
+    "nodejs@latest"
   ],
   "shell": {
     "init_hook": [

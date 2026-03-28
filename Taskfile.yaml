@@ -9,6 +9,9 @@ includes:
   server:
     taskfile: server/Taskfile.yaml
     dir: server
+  frontend:
+    taskfile: frontend/Taskfile.yml
+    dir: frontend
   k8s:
     taskfile: k8s/Taskfile.yaml
     dir: k8s
