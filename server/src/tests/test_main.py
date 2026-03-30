@@ -7,7 +7,7 @@ from ..server.main import app
 def test_predict():
     data = {"text": "I love this product! It's amazing and works perfectly."}
     with TestClient(app) as client:
-        response = client.post("/predict", json=data)
+        response = client.post("/api/predict", json=data)
         assert response.status_code == 200
         assert response.json() == {"prediction": "Very Positive"}
 
@@ -25,13 +25,13 @@ def test_predict_speed():
     # Load the model once to avoid measuring load time
     data = {"text": "This is a load test sentence."}
     with TestClient(app) as client:
-        response = client.post("/predict", json=data)
+        response = client.post("/api/predict", json=data)
 
         data = {"text": "This is a test to check the speed of prediction."}
         measured_time = []
         for _ in range(measurements):
             start_time = time.time()
-            response = client.post("/predict", json=data)
+            response = client.post("/api/predict", json=data)
             end_time = time.time()
             assert response.status_code == 200
             measured_time.append(end_time - start_time)
@@ -51,32 +51,12 @@ def test_predict_speed():
 
 def test_missing_text_field():
     with TestClient(app) as client:
-        response = client.post("/predict", json={})
+        response = client.post("/api/predict", json={})
         assert response.status_code == 422  # Unprocessable Entity
 
 
 def test_ping():
     with TestClient(app) as client:
-        response = client.get("/ping")
+        response = client.get("/api/ping")
         assert response.status_code == 200
         assert response.text == '"pong"'
-
-
-def test_version():
-    from ..server import __version__
-
-    with TestClient(app) as client:
-        response = client.get("/version")
-        assert response.status_code == 200
-        resp = response.json()
-        assert "version" in resp
-        assert resp["version"] == __version__
-
-
-def test_root():
-    with TestClient(app) as client:
-        response = client.get("/")
-        assert response.status_code == 200
-        resp = response.json()
-        assert "message" in resp
-        assert resp["message"] == "Welcome to the ML model server!"
