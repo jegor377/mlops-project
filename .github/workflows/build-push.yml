@@ -98,7 +98,7 @@ jobs:
     - name: Update Kubernetes manifests with new image tag
       if: ${{ !env.ACT }}
       run: |
-        task utils:update-image-tags SERVICE=${{ matrix.service }} NEW_TAG=${{ steps.image-tag.outputs.version }} ENVIRONMENT=${{ steps.image-tag.outputs.environment }}
+        task utils:update-image-tags SERVICE=${{ matrix.service }} NEW_TAG=${{ steps.image-tag.outputs.version }} ENVIRONMENT=${{ needs.filter.outputs.environment }}
     - uses: stefanzweifel/git-auto-commit-action@v7
       with:
         commit_message: "chore: Update image version to ${{ steps.image-tag.outputs.version }} on ${{ steps.image-tag.outputs.environment }} environment in ${{ matrix.service }} service"
