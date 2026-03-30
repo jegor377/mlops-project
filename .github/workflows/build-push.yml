@@ -42,7 +42,7 @@ jobs:
           svc="${tag%%@*}"
           echo "services=[\"$svc\"]" >> "$GITHUB_OUTPUT"
           echo "environment=production" >> "$GITHUB_OUTPUT"
-        else:
+        else
           echo "services=${{ steps.filter.outputs.changes }}" >> "$GITHUB_OUTPUT"
           echo "environment=staging" >> "$GITHUB_OUTPUT"
         fi
@@ -104,4 +104,4 @@ jobs:
       with:
         commit_message: "chore: Update image version to ${{ steps.image-tag.outputs.version }} on ${{ steps.image-tag.outputs.environment }} environment in ${{ matrix.service }} service"
         branch: main
-        file_pattern: "k8s/services/server/overlays/*/patches/Rollout.yaml"
+        file_pattern: "k8s/services/${{ matrix.service }}/overlays/*/patches/Rollout.yaml"
