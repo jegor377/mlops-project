@@ -70,7 +70,6 @@ jobs:
         password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
     - name: Compute image tag
       id: image-tag
-      working-directory: ${{ matrix.service }}
       env:
         ENVIRONMENT: ${{ needs.filter.outputs.environment }}
         SERVICE: ${{ matrix.service }}
