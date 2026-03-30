@@ -1,0 +1,16 @@
+- op: replace
+  path: /spec/template/spec/containers/0/image
+  value: igorsantarek/frontend:latest
+- op: replace
+  path: /apiVersion
+  value: apps/v1
+- op: replace
+  path: /kind
+  value: Deployment
+- op: remove
+  path: /spec/strategy
+- op: add
+  path: /spec/selector
+  value:
+    matchLabels:
+      app: frontend

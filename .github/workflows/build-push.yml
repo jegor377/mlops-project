@@ -6,6 +6,10 @@ on:
     paths:
       - "server/**"
       - "!server/src/server/__init__.py"
+      - "frontend/**"
+      - "!frontend/node_modules/**"
+      - "!frontend/.react-router/**"
+      - "!frontend/README.md"
     tags:
       - "**@[0-9]*.[0-9]*.[0-9]*"
 
@@ -13,9 +17,44 @@ permissions:
   contents: write
 
 jobs:
+  filter:
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.set-output.outputs.services }}
+      environment: ${{ steps.set-output.outputs.environment }}
+    steps:
+    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+    - name: Paths Changes Filter
+      uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+      id: filter
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        filters: |
+          server:
+            - "server/**"
+          frontend:
+            - "frontend/**"
+    - name: Set Output
+      id: set-output
+      run: |
+        if [[ "${{ github.ref_type }}" == "tag" ]]; then
+          tag="${GITHUB_REF_NAME}"
+          svc="${tag%%@*}"
+          echo "services=[\"$svc\"]" >> "$GITHUB_OUTPUT"
+          echo "environment=production" >> "$GITHUB_OUTPUT"
+        else:
+          echo "service=${{ steps.filter.outputs.changes }}" >> "$GITHUB_OUTPUT"
+          echo "environment=staging" >> "$GITHUB_OUTPUT"
+        fi
+
   build-and-push:
     runs-on: ubuntu-latest
-
+    if: ${{ needs.filter.outputs.services != '[]' && needs.filter.outputs.services != '' }}
+    needs: filter
+    strategy:
+      matrix:
+        service: ${{ fromJson(needs.filter.outputs.services) }}
+      fail-fast: false
     steps:
     - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       with:
@@ -31,15 +70,17 @@ jobs:
         password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
     - name: Compute image tag
       id: image-tag
+      working-directory: ${{ matrix.service }}
+      env:
+        ENVIRONMENT: ${{ needs.filter.outputs.environment }}
+        SERVICE: ${{ matrix.service }}
       run: |
-        if [[ "${{ github.ref_type }}" == "tag" ]]; then
-          IMAGE_TAG=$(task -s utils:generate-version-tag -- server)
-          VERSION=$(task -s utils:generate-version -- server)
-          echo "environment=production" >> $GITHUB_OUTPUT
+        if [[ "$ENVIRONMENT" == "production" ]]; then
+          IMAGE_TAG=$(task -s utils:generate-version-tag -- $SERVICE)
+          VERSION=$(task -s utils:generate-version -- $SERVICE)
         else # if on push to main branch
-          IMAGE_TAG=$(task -s utils:generate-extended-version-tag -- server)
-          VERSION=$(task -s utils:generate-extended-version -- server)
-          echo "environment=staging" >> $GITHUB_OUTPUT
+          IMAGE_TAG=$(task -s utils:generate-extended-version-tag -- $SERVICE)
+          VERSION=$(task -s utils:generate-extended-version -- $SERVICE)
         fi
         echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
         echo "version=${VERSION}" >> $GITHUB_OUTPUT
@@ -50,7 +91,7 @@ jobs:
     - name: Build and push Docker image
       uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
       with:
-        context: ./server
+        context: ${{ matrix.service }}
         push: ${{ !env.ACT }}
         tags: ${{ steps.image-tag.outputs.image_tag }}
         cache-from: type=gha
@@ -58,9 +99,9 @@ jobs:
     - name: Update Kubernetes manifests with new image tag
       if: ${{ !env.ACT }}
       run: |
-        task utils:update-image-tags NEW_TAG=${{ steps.image-tag.outputs.version }} ENVIRONMENT=${{ steps.image-tag.outputs.environment }}
+        task utils:update-image-tags SERVICE=${{ matrix.service }} NEW_TAG=${{ steps.image-tag.outputs.version }} ENVIRONMENT=${{ steps.image-tag.outputs.environment }}
     - uses: stefanzweifel/git-auto-commit-action@v7
       with:
-        commit_message: "chore: Update image version to ${{ steps.image-tag.outputs.version }} on ${{ steps.image-tag.outputs.environment }} environment"
+        commit_message: "chore: Update image version to ${{ steps.image-tag.outputs.version }} on ${{ steps.image-tag.outputs.environment }} environment in ${{ matrix.service }} service"
         branch: main
         file_pattern: "k8s/services/server/overlays/*/patches/Rollout.yaml"

@@ -1,36 +1,36 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Rollout
 metadata:
-  name: ml-server
+  name: frontend
   labels:
-    app: ml-server
+    app: frontend
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: ml-server
+      app: frontend
   template:
     metadata:
       labels:
-        app: ml-server
+        app: frontend
     spec:
       containers:
-        - name: mlops-container
-          image: igorsantarek/ml_server:latest
+        - name: frontend-container
+          image: igorsantarek/frontend:latest
           ports:
-            - containerPort: 8000
+            - containerPort: 3000
               protocol: TCP
           env:
           - name: HF_HOME
             value: /tmp/.cache
           readinessProbe:
             httpGet:
-              path: /api/ping
-              port: 8000
+              path: /
+              port: 3000
           startupProbe:
             httpGet:
-              path: /api/ping
-              port: 8000
+              path: /
+              port: 3000
             failureThreshold: 30
             periodSeconds: 10
           resources:

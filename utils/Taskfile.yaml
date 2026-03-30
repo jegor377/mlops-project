@@ -23,7 +23,7 @@ tasks:
         sh: task -s generate-version -- {{.SERVICE_RELEASE_TAG}}
     cmds:
       - |
-        echo "{{.IMAGE_REPO}}:{{.VERSION}}"
+        echo "{{.SERVER_IMAGE_REPO}}:{{.VERSION}}"
 
   generate-extended-version:
     desc: "Emit X.Y.Z-000N-g<SHA> using generate-version as the base"
@@ -56,12 +56,12 @@ tasks:
         sh: task -s generate-extended-version -- {{.SERVICE_RELEASE_TAG}}
     cmds:
       - |
-        echo "{{.IMAGE_REPO}}:{{.VERSION}}"
+        echo "{{.SERVER_IMAGE_REPO}}:{{.VERSION}}"
 
   update-image-tags:
     desc: "Update image tags in Kubernetes manifests"
-    dir: ../k8s/services/server/overlays/{{.ENVIRONMENT}}/patches
+    dir: ../k8s/services/{{.SERVICE}}/overlays/{{.ENVIRONMENT}}/patches
     cmds:
       - |
-        sed -i "s|igorsantarek/ml_server:[A-Za-z0-9\.\-]*$|igorsantarek/ml_server:{{.NEW_TAG}}|g" Rollout.yaml
+        sed -i "s|igorsantarek/{{.SERVICE}}:[A-Za-z0-9\.\-]*$|igorsantarek/{{.SERVICE}}:{{.NEW_TAG}}|g" Rollout.yaml
       - git --no-pager diff  Rollout.yaml

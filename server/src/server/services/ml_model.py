@@ -12,7 +12,7 @@ class Model:
         for param in self.model.parameters():
             param.requires_grad_(False)
 
-        self.model = torch.compile(self.model)
+        #self.model = torch.compile(self.model)
 
     def predict(self, texts):
         inputs = self.tokenizer(

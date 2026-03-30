@@ -3,7 +3,8 @@
 version: '3'
 
 vars:
-  IMAGE_REPO: "igorsantarek/ml_server"
+  SERVER_IMAGE_REPO: "igorsantarek/ml_server"
+  FRONTEND_IMAGE_REPO: "igorsantarek/frontend"
 
 includes:
   server:

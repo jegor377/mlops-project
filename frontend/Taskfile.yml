@@ -3,7 +3,19 @@
 version: '3'
 
 tasks:
-  run-dev:
+  run-local:
     desc: Run the development server
     cmds:
       - npm run dev
+  build:
+    desc: Build the frontend application
+    cmds:
+      - npm run build
+  build-image:
+    desc: Build the frontend docker image
+    cmds:
+      - docker build -t {{.FRONTEND_IMAGE_REPO}}:latest .
+  run-docker:
+    desc: Run the frontend container locally
+    cmds:
+      - docker run -d -p 3000:3000 {{.FRONTEND_IMAGE_REPO}}:latest

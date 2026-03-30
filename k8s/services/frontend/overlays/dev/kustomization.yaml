@@ -1,0 +1,25 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: frontend-dev
+resources:
+  - ../../base
+  - manifests/Namespace.yaml
+patches:
+  - path: patches/Gateway.yaml
+    target:
+      group: gateway.networking.k8s.io
+      version: v1
+      kind: Gateway
+      name: frontend-gw
+  - path: patches/Rollout.yaml
+    target:
+      group: argoproj.io
+      version: v1alpha1
+      kind: Rollout
+      name: frontend
+  - path: patches/HTTPRoute.yaml
+    target:
+      group: gateway.networking.k8s.io
+      version: v1
+      kind: HTTPRoute
+      name: frontend-route

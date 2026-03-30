@@ -36,13 +36,18 @@ resource "kubectl_manifest" "ml-server-project" {
   yaml_body  = file("${path.module}/../../k8s/argocd/app-project-ml-server.yaml")
 }
 
+resource "kubectl_manifest" "frontend-project" {
+  depends_on = [helm_release.argocd, helm_release.argo_rollouts]
+  yaml_body  = file("${path.module}/../../k8s/argocd/app-project-frontend.yaml")
+}
+
 resource "kubectl_manifest" "platform-project" {
   depends_on = [helm_release.argocd, helm_release.argo_rollouts]
   yaml_body  = file("${path.module}/../../k8s/argocd/app-project-platform.yaml")
 }
 
 resource "kubectl_manifest" "root-app" {
-  depends_on = [kubectl_manifest.ml-server-project, kubectl_manifest.platform-project]
+  depends_on = [kubectl_manifest.ml-server-project, kubectl_manifest.frontend-project, kubectl_manifest.platform-project]
   yaml_body  = file("${path.module}/../../k8s/argocd/root-app.yaml")
 }
 
