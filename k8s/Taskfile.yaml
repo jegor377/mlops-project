@@ -10,6 +10,11 @@ tasks:
     cmds:
       - kubectl apply -k services/ml_server/overlays/dev
       - kubectl apply -k services/frontend/overlays/dev
+  delete-dev-resources:
+    desc: "Delete development resources from the cluster"
+    cmds:
+      - kubectl delete -k services/ml_server/overlays/dev
+      - kubectl delete -k services/frontend/overlays/dev
   install-argo-rollouts-plugin:
     desc: "Install the Argo Rollouts plugin for Argo CD"
     cmds:
