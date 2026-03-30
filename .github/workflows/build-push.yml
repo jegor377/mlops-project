@@ -4,8 +4,8 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - "server/**"
-      - "!server/src/server/__init__.py"
+      - "ml_server/**"
+      - "!ml_server/src/ml_server/__init__.py"
       - "frontend/**"
       - "!frontend/node_modules/**"
       - "!frontend/.react-router/**"
@@ -30,8 +30,8 @@ jobs:
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         filters: |
-          server:
-            - "server/**"
+          ml_server:
+            - "ml_server/**"
           frontend:
             - "frontend/**"
     - name: Set Output

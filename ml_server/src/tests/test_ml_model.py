@@ -1,6 +1,6 @@
 import pytest
 
-from ..server.services import ml_model
+from ..ml_server.services import ml_model
 
 
 @pytest.mark.slow

@@ -8,7 +8,7 @@ tasks:
   apply-dev-resources:
     desc: "Apply development resources to the cluster"
     cmds:
-      - kubectl apply -k services/server/overlays/dev
+      - kubectl apply -k services/ml_server/overlays/dev
       - kubectl apply -k services/frontend/overlays/dev
   install-argo-rollouts-plugin:
     desc: "Install the Argo Rollouts plugin for Argo CD"

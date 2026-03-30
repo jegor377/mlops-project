@@ -7,9 +7,9 @@ vars:
   FRONTEND_IMAGE_REPO: "igorsantarek/frontend"
 
 includes:
-  server:
-    taskfile: server/Taskfile.yaml
-    dir: server
+  ml_server:
+    taskfile: ml_server/Taskfile.yaml
+    dir: ml_server
   frontend:
     taskfile: frontend/Taskfile.yml
     dir: frontend

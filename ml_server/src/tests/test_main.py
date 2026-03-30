@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from ..server.main import app
+from ..ml_server.main import app
 
 
 def test_predict():

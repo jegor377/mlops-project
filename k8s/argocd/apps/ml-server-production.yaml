@@ -7,7 +7,7 @@ spec:
   project: ml-server
   source:
     repoURL: https://github.com/jegor377/mlops-project.git
-    path: k8s/services/server/overlays/production
+    path: k8s/services/ml_server/overlays/production
     targetRevision: main
   destination:
     server: https://kubernetes.default.svc

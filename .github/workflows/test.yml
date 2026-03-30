@@ -4,11 +4,11 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - "server/**"
+      - "ml_server/**"
   pull_request:
     branches: [ "main" ]
     paths:
-      - "server/**"
+      - "ml_server/**"
 
 permissions:
   contents: read
@@ -56,8 +56,8 @@ jobs:
     - name: Lint with flake8
       run: task lint
     - name: Test with pytest (fail fast)
-      run: task server:test-not-slow
+      run: task ml_server:test-not-slow
     - name: Test with pytest (slow tests)
-      run: task server:test-slow
+      run: task ml_server:test-slow
     - name: Minimize uv cache
       run: uv cache prune --ci
