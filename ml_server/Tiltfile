@@ -10,5 +10,5 @@ docker_build(
         ),
     ]
 )
-k8s_yaml('../k8n/base/Deployment.yaml')
+k8s_yaml(kustomize('../k8s/services/ml_server/overlays/dev'))
 k8s_resource('ml-server', port_forwards=8000)

@@ -1,0 +1,6 @@
+docker_build(
+    'igorsantarek/frontend',
+    './',
+)
+k8s_yaml(kustomize('../k8s/services/frontend/overlays/dev'))
+k8s_resource('frontend', port_forwards=3000)
