@@ -29,4 +29,3 @@ async def read_root(request: ModelRequest):
 @app.get("/api/ping")
 async def ping():
     return "pong"
-
