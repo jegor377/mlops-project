@@ -98,9 +98,15 @@ jobs:
     - name: Update Kubernetes manifests with new image tag
       if: ${{ !env.ACT }}
       run: |
-        task utils:update-image-tags SERVICE=${{ matrix.service }} NEW_TAG=${{ steps.image-tag.outputs.version }} ENVIRONMENT=${{ needs.filter.outputs.environment }}
-    - uses: stefanzweifel/git-auto-commit-action@v7
-      with:
-        commit_message: "chore: Update image version to ${{ steps.image-tag.outputs.version }} on ${{ steps.image-tag.outputs.environment }} environment in ${{ matrix.service }} service"
-        branch: main
-        file_pattern: "k8s/services/${{ matrix.service }}/overlays/*/patches/Rollout.yaml"
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        for i in {1..5}; do
+          git pull --rebase origin main
+          task utils:update-image-tags SERVICE=${{ matrix.service }} NEW_TAG=${{ steps.image-tag.outputs.version }} ENVIRONMENT=${{ needs.filter.outputs.environment }}
+          git add k8s/services/${{ matrix.service }}/overlays/*/patches/Rollout.yaml
+          git commit -m "chore: Update image version to ${{ steps.image-tag.outputs.version }} on ${{ needs.filter.outputs.environment }} environment in ${{ matrix.service }} service" && \
+          git push origin main && break || git reset HEAD~1
+          sleep_time=$((RANDOM % 10 + 3))
+          echo "Push failed, retrying in $sleep_time seconds..."
+          sleep $sleep_time
+        done
