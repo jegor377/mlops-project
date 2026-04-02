@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.9.2](https://github.com/jegor377/mlops-project/compare/ml_server@0.9.1...ml_server@0.9.2) (2026-04-02)
+
+
+### Bug Fixes
+
+* **ml_server:** ml_server ci test ([e75c367](https://github.com/jegor377/mlops-project/commit/e75c36778e2199d31ef5b6ed8e6e7607207686c9))
+* **ml_server:** ml_server ci test ([e56c14d](https://github.com/jegor377/mlops-project/commit/e56c14d05a88bef61116f78bda2279762c764522))
+* **server:** ml_server ci test ([b8f5745](https://github.com/jegor377/mlops-project/commit/b8f574520ec64ecf17ca3777a38fdf87f2e46409))
+
 ## [0.9.1](https://github.com/jegor377/mlops-project/compare/ml_server@0.9.0...ml_server@0.9.1) (2026-04-02)
 
 
