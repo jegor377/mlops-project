@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1](https://github.com/jegor377/mlops-project/compare/ml_server@0.9.0...ml_server@0.9.1) (2026-04-02)
+
+
+### Chores
+
+* rename server to ml_server ([cc9935f](https://github.com/jegor377/mlops-project/commit/cc9935f338a803c44bbf2c1a00e7e9aa55f1df7a))
+
 ## [0.9.0](https://github.com/jegor377/mlops-project/compare/server@0.8.3...server@0.9.0) (2026-02-11)
 
 
