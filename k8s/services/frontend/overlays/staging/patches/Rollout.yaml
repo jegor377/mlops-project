@@ -1,3 +1,3 @@
 - op: replace
   path: /spec/template/spec/containers/0/image
-  value: igorsantarek/frontend:0.2.0-0013-g471d7c0
+  value: igorsantarek/frontend:0.2.0-0025-ge75c367
