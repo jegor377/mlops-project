@@ -39,15 +39,20 @@ tasks:
       - uv sync
   sync-server-deps:
     desc: "Sync server dependencies"
-    dir: server
+    dir: ml_server
     cmds:
       - uv lock
       - uv sync
   sync-deps:
     desc: "Sync all dependencies"
+    deps:
+      - sync-repo-deps
+      - sync-server-deps
+  lock-deps:
+    desc: "Lock all dependencies"
     cmds:
-      - task: sync-repo-deps
-      - task: sync-server-deps
+      - uv lock
+      - uv lock --project ml_server
   lint:
     desc: "Run linters for all components"
     cmds:

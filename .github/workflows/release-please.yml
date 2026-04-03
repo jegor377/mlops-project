@@ -41,7 +41,7 @@ jobs:
         with:
           version: 3.x
       - name: Update uv.lock
-        run: task sync-deps
+        run: task lock-deps
       - name: Commit uv.lock
         uses: stefanzweifel/git-auto-commit-action@04702edda442b2e678b25b537cec683a1493fcb9 # v7.1.0
         with:
