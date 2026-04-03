@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/jegor377/mlops-project/compare/frontend@0.2.1...frontend@0.2.2) (2026-04-03)
+
+
+### Bug Fixes
+
+* **frontend:** ci frontend test ([33e9c0a](https://github.com/jegor377/mlops-project/commit/33e9c0a3417256452d7f3fd74903bba7f9b3417f))
+
 ## [0.2.1](https://github.com/jegor377/mlops-project/compare/frontend@0.2.0...frontend@0.2.1) (2026-04-02)
 
 
