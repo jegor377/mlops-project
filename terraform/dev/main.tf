@@ -66,3 +66,14 @@ resource "kubectl_manifest" "traefik_config" {
   depends_on = [helm_release.traefik]
   yaml_body  = file("${path.module}/manifests/GatewayClass.yaml")
 }
+
+resource "helm_release" "cnpg" {
+  depends_on       = [kind_cluster.default]
+  name             = "cnpg"
+  repository       = "https://cloudnative-pg.github.io/charts"
+  chart            = "cloudnative-pg"
+  version          = "0.28.0"
+  create_namespace = true
+  namespace        = "cloudnative-pg-system"
+  # wait             = false
+}

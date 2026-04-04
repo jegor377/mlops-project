@@ -18,7 +18,8 @@
     "terraform@latest",
     "path:gcloud#google-cloud-sdk",
     "cloud-provider-kind@latest",
-    "nodejs@latest"
+    "nodejs@latest",
+    "postgresql@latest"
   ],
   "shell": {
     "init_hook": [
