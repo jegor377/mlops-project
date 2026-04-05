@@ -23,6 +23,11 @@ spec:
           env:
           - name: HF_HOME
             value: /tmp/.cache
+          - name: DB_URI
+            valueFrom:
+              secretKeyRef:
+                name: cnpg-cluster-app
+                key: uri
           readinessProbe:
             httpGet:
               path: /api/ping
@@ -43,12 +48,19 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             privileged: false
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
       securityContext:
         seccompProfile:
           type: RuntimeDefault
         runAsUser: 1001
         runAsGroup: 1001
         runAsNonRoot: true
+      volumes:
+        - name: tmp
+          emptyDir: {}
   strategy:
     canary: #Indicates that the rollout should use the Canary strategy
       maxSurge: '25%'

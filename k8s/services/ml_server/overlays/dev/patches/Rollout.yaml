@@ -14,3 +14,9 @@
   value:
     matchLabels:
       app: ml-server
+- op: replace
+  path: /spec/replicas
+  value: 1
+- op: replace
+  path: /spec/template/spec/containers/0/securityContext/readOnlyRootFilesystem
+  value: false
