@@ -10,7 +10,7 @@ import logging
 from . import __version__
 from .models.data_models import ModelRequest, ModelResponse
 from .models.user import Base, UserCreate, User
-# from .services.ml_model import Model
+from .services.ml_model import Model
 
 
 @asynccontextmanager
