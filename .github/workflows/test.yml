@@ -36,11 +36,6 @@ jobs:
           --health-retries 5
 
     steps:
-    # - name: test the connection to the postgres service
-    #   run: |
-    #     apt-get update
-    #     apt-get install --yes --no-install-recommends postgresql-client
-    #     psql postgresql://postgres:postgres@localhost:8082/test_db -c "SELECT 1"
     - name: Debug info
       run: |
         echo "Event name: ${{ github.event_name }}"
