@@ -1,19 +1,29 @@
 version: 3
 
+
+vars:
+  DB_HOST: 127.0.0.1
+  DB_PORT: 8081
+  DB_URI: "postgresql://postgres:postgres@{{.DB_HOST}}:{{.DB_PORT}}"
+  LOAD_MODEL_IN_TESTS: true
+  LOAD_MODEL_IN_DEV: false
+
+
 tasks:
-  run-local:
+  run-dev:
     desc: "Run the mlops server locally"
-    dir: src
+    env:
+      DB_URI: "{{.DB_URI}}/dev_db"
+      LOAD_MODEL: "{{.LOAD_MODEL_IN_DEV}}"
     cmds:
-      - uv run uvicorn server.main:app --reload
-  test-not-slow:
+      - uv run uvicorn src.ml_server.main:app --reload
+  test:
     desc: "Run the not slow tests"
+    env:
+      DB_URI: "{{.DB_URI}}/test_db"
+      LOAD_MODEL: "{{.LOAD_MODEL_IN_TESTS}}"
     cmds:
-      - uv run pytest -m "not slow"
-  test-slow:
-    desc: "Run the slow tests"
-    cmds:
-      - uv run pytest -m "slow"
+      - uv run pytest
   build-image:
     desc: "Build the mlops server docker image"
     cmds:
@@ -22,3 +32,21 @@ tasks:
     desc: "Run the mlops server container locally"
     cmds:
       - docker run -d -p 8000:8000 {{.SERVER_IMAGE_REPO}}:latest
+  run-postgres-container:
+    desc: "Run a postgres container locally"
+    cmds:
+      - |
+        docker run -d -p {{.DB_PORT}}:5432 \
+        --name postgres \
+        -e POSTGRES_USER=postgres \
+        -e POSTGRES_PASSWORD=postgres \
+        -v ./init.sql:/docker-entrypoint-initdb.d/init.sql \
+        postgres:latest
+  rm-postgres-container:
+    desc: "Remove the postgres container"
+    cmds:
+      - docker rm -f postgres
+  psql-postgres:
+    desc: "Connect to the postgres container using psql"
+    cmds:
+      - psql {{.DB_URI}}

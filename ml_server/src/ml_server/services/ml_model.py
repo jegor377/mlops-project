@@ -8,11 +8,11 @@ class Model:
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForSequenceClassification.from_pretrained(model_name)
         self.model.eval()
-        
+
         for param in self.model.parameters():
             param.requires_grad_(False)
 
-        #self.model = torch.compile(self.model)
+        # self.model = torch.compile(self.model)
 
     def predict(self, texts):
         inputs = self.tokenizer(

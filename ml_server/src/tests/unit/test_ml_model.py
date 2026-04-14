@@ -1,9 +1,6 @@
-import pytest
-
-from ..ml_server.services import ml_model
+from src.ml_server.services import ml_model
 
 
-@pytest.mark.slow
 def test_correct_prediction():
     model = ml_model.Model()
     texts = [

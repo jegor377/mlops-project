@@ -20,7 +20,27 @@ jobs:
     env:
       UV_CACHE_DIR: /tmp/.uv-cache
 
+    services:
+      postgres:
+        image: postgres:18
+        ports:
+          - 8082:5432
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
+    # - name: test the connection to the postgres service
+    #   run: |
+    #     apt-get update
+    #     apt-get install --yes --no-install-recommends postgresql-client
+    #     psql postgresql://postgres:postgres@localhost:8082/test_db -c "SELECT 1"
     - name: Debug info
       run: |
         echo "Event name: ${{ github.event_name }}"
@@ -48,16 +68,17 @@ jobs:
     - name: Install Task
       uses: arduino/setup-task@b91d5d2c96a56797b48ac1e0e89220bf64044611 # v2.0.0
       with:
-        version: 3.x
+        version: 3.45.x
     - name: Install uv
       uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7.1.6
     - name: Install dependencies
       run: task sync-deps
     - name: Lint with flake8
       run: task lint
-    - name: Test with pytest (fail fast)
-      run: task ml_server:test-not-slow
-    - name: Test with pytest (slow tests)
-      run: task ml_server:test-slow
+    - name: Test with pytest
+      env:
+        DB_URI: postgresql://postgres:postgres@localhost:8082/test_db
+        LOAD_MODEL: false # don't load the model during tests to speed them up. Only local tests will load the model.
+      run: task ml_server:test
     - name: Minimize uv cache
       run: uv cache prune --ci

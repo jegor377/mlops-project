@@ -28,6 +28,8 @@ spec:
               secretKeyRef:
                 name: cnpg-cluster-app
                 key: uri
+          - name: LOAD_MODEL
+            value: "true"
           readinessProbe:
             httpGet:
               path: /api/ping

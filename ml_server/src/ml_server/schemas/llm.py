@@ -1,9 +1,9 @@
 from pydantic import BaseModel
 
 
-class ModelRequest(BaseModel):
+class LLMRequest(BaseModel):
     text: str
 
 
-class ModelResponse(BaseModel):
+class LLMResponse(BaseModel):
     prediction: str
