@@ -50,3 +50,7 @@ tasks:
     desc: "Connect to the postgres container using psql"
     cmds:
       - psql {{.DB_URI}}
+  alembic:
+    desc: "Run alembic commands"
+    cmds:
+      - uv run alembic {{.CLI_ARGS}}
