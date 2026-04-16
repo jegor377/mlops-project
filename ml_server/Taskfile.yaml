@@ -46,7 +46,7 @@ tasks:
     desc: "Remove the postgres container"
     cmds:
       - docker rm -f postgres
-  psql-postgres:
+  psql:
     desc: "Connect to the postgres container using psql"
     cmds:
       - psql {{.DB_URI}}

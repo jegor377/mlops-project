@@ -6,7 +6,8 @@ from asgi_lifespan import LifespanManager
 from src.ml_server.conf.settings import Settings
 from src.ml_server.app import create_app
 from src.ml_server.dependencies.db import get_session
-from src.ml_server.models.user import Base
+from src.ml_server.models.base import Base
+from src.ml_server.models import *  # noqa: F401, F403
 
 
 test_settings = Settings()
