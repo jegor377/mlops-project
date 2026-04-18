@@ -1,3 +1,0 @@
-- op: replace
-  path: /spec/template/spec/containers/0/image
-  value: igorsantarek/frontend:0.2.2-0000-geff1304

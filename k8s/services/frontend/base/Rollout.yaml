@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: frontend-container
-          image: igorsantarek/frontend:latest
+          image: igorsantarek/frontend
           ports:
             - containerPort: 3000
               protocol: TCP

@@ -60,8 +60,8 @@ tasks:
 
   update-image-tags:
     desc: "Update image tags in Kubernetes manifests"
-    dir: ../k8s/services/{{.SERVICE}}/overlays/{{.ENVIRONMENT}}/patches
+    dir: ../k8s/services/{{.SERVICE}}/overlays/{{.ENVIRONMENT}}
     cmds:
       - |
-        sed -i "s|igorsantarek/{{.SERVICE}}:[A-Za-z0-9\.\-]*$|igorsantarek/{{.SERVICE}}:{{.NEW_TAG}}|g" Rollout.yaml
-      - git --no-pager diff  Rollout.yaml
+        sed -i "s|newTag: [A-Za-z0-9\.\-]*$|newTag: {{.NEW_TAG}}|g" kustomization.yaml
+      - git --no-pager diff  kustomization.yaml

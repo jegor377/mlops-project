@@ -10,3 +10,6 @@ patches:
       name: frontend
     path: patches/Rollout.yaml
   - path: patches/HTTPRoute.yaml
+images:
+  - name: igorsantarek/frontend
+    newTag: 0.2.2-0000-geff1304

@@ -3,10 +3,7 @@ kind: Kustomization
 resources:
   - ../../base
 patches:
-  - target:
-      group: argoproj.io
-      version: v1alpha1
-      kind: Rollout
-      name: frontend
-    path: patches/Rollout.yaml
   - path: patches/HTTPRoute.yaml
+images:
+  - name: igorsantarek/frontend
+    newTag: 0.2.2
