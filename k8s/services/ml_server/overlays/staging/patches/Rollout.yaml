@@ -1,3 +1,0 @@
-- op: replace
-  path: /spec/template/spec/containers/0/image
-  value: igorsantarek/ml_server:0.9.3-0020-g2543aec

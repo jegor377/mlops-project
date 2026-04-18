@@ -23,3 +23,6 @@ patches:
       version: v1
       kind: HTTPRoute
       name: ml-server-route
+images:
+  - name: igorsantarek/ml_server
+    newTag: latest

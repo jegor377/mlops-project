@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: mlops-container
-          image: igorsantarek/ml_server:latest
+          image: igorsantarek/ml_server
           ports:
             - containerPort: 8000
               protocol: TCP

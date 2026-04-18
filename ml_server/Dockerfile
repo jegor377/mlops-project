@@ -15,7 +15,9 @@ COPY --chown=app:app uv.lock pyproject.toml ./
 
 RUN uv sync
 
-COPY --chown=app:app src ./
+COPY --chown=app:app src src
+COPY --chown=app:app migrations migrations
+COPY --chown=app:app alembic.ini alembic.ini
 
 USER app
 
@@ -39,12 +41,16 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # ──────────────────────────────────────────
 FROM python:3.12.3-slim AS prod
 
+RUN apt-get update && apt-get install -y iputils-ping
+
 RUN groupadd -g 1001 app && useradd -u 1001 -g app -m app
 
 WORKDIR /app
 
 COPY --from=builder --chown=app:app /app/.venv /app/.venv
-COPY --chown=app:app src ./
+COPY --chown=app:app src src
+COPY --chown=app:app migrations migrations
+COPY --chown=app:app alembic.ini alembic.ini
 
 USER app
 

@@ -1,7 +1,4 @@
 - op: replace
-  path: /spec/template/spec/containers/0/image
-  value: igorsantarek/ml_server:latest
-- op: replace
   path: /apiVersion
   value: apps/v1
 - op: replace
@@ -20,3 +17,22 @@
 - op: replace
   path: /spec/template/spec/containers/0/securityContext/readOnlyRootFilesystem
   value: false
+- op: add
+  path: /spec/template/spec/initContainers
+  value:
+    - name: migrate
+      image: igorsantarek/ml_server:latest
+      command: ["/app/.venv/bin/alembic", "upgrade", "head"]
+      env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: cnpg-cluster-app
+              key: uri
+      securityContext:
+        allowPrivilegeEscalation: false
+        privileged: false
+        readOnlyRootFilesystem: true
+      volumeMounts:
+        - name: tmp
+          mountPath: /tmp

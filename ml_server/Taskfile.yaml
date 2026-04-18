@@ -31,7 +31,13 @@ tasks:
   run-docker:
     desc: "Run the mlops server container locally"
     cmds:
-      - docker run -d -p 8000:8000 {{.SERVER_IMAGE_REPO}}:latest
+      - |
+        docker run -d -p 8000:8000 \
+        --name ml_server \
+        -e DB_URI=postgresql://postgres:postgres@postgres:5432/dev_db \
+        -e LOAD_MODEL={{.LOAD_MODEL_IN_DEV}} \
+        --network=mlops-network \
+        {{.SERVER_IMAGE_REPO}}:latest
   run-postgres-container:
     desc: "Run a postgres container locally"
     cmds:
@@ -41,11 +47,20 @@ tasks:
         -e POSTGRES_USER=postgres \
         -e POSTGRES_PASSWORD=postgres \
         -v ./init.sql:/docker-entrypoint-initdb.d/init.sql \
+        --network=mlops-network \
         postgres:latest
   rm-postgres-container:
     desc: "Remove the postgres container"
     cmds:
       - docker rm -f postgres
+  create-docker-network:
+    desc: "Create a docker network for the mlops server and postgres to communicate"
+    cmds:
+      - docker network create mlops-network
+  remove-docker-network:
+    desc: "Remove the docker network"
+    cmds:
+      - docker network rm mlops-network
   psql:
     desc: "Connect to the postgres container using psql"
     cmds:

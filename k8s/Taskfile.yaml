@@ -5,6 +5,10 @@ tasks:
     desc: "Port forward the Traefik gateway to localhost"
     cmds:
       - kubectl -n traefik-system port-forward svc/traefik 80
+  port-forward-psql:
+    desc: "Port forward the postgres service to localhost"
+    cmds:
+      - kubectl -n ml-server-dev port-forward svc/cnpg-cluster-rw 8082:5432
   apply-dev-resources:
     desc: "Apply development resources to the cluster"
     cmds:
