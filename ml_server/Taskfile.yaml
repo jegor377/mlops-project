@@ -15,6 +15,14 @@ tasks:
     env:
       DB_URI: "{{.DB_URI}}/dev_db"
       LOAD_MODEL: "{{.LOAD_MODEL_IN_DEV}}"
+      HOSTNAME: localhost
+      SMTP_HOST: 127.0.0.1
+      SMTP_PORT: 1025
+      SMTP_USE_CREDENTIALS: false
+      SMTP_VALIDATE_CERTS: false
+      SMTP_FROM: no-reply@example.com
+      SMTP_STARTTLS: false
+      SMTP_SSL_TLS: false
     cmds:
       - uv run uvicorn src.ml_server.main:app --reload
   test:
@@ -22,6 +30,14 @@ tasks:
     env:
       DB_URI: "{{.DB_URI}}/test_db"
       LOAD_MODEL: "{{.LOAD_MODEL_IN_TESTS}}"
+      HOSTNAME: localhost
+      SMTP_HOST: 127.0.0.1
+      SMTP_PORT: 1025
+      SMTP_USE_CREDENTIALS: false
+      SMTP_VALIDATE_CERTS: false
+      SMTP_FROM: no-reply@example.com
+      SMTP_STARTTLS: false
+      SMTP_SSL_TLS: false
     cmds:
       - uv run pytest
   build-image:
@@ -30,12 +46,31 @@ tasks:
       - docker build -t {{.SERVER_IMAGE_REPO}}:latest .
   run-docker:
     desc: "Run the mlops server container locally"
+    vars:
+      HOSTNAME: mailpit
+      SMTP_HOST: 127.0.0.1
+      SMTP_PORT: 1025
+      SMTP_USE_CREDENTIALS: false
+      SMTP_VALIDATE_CERTS: false
+      SMTP_FROM: no-reply@example.com
+      SMTP_STARTTLS: false
+      SMTP_SSL_TLS: false
     cmds:
       - |
         docker run -d -p 8000:8000 \
         --name ml_server \
         -e DB_URI=postgresql://postgres:postgres@postgres:5432/dev_db \
         -e LOAD_MODEL={{.LOAD_MODEL_IN_DEV}} \
+        -e HOSTNAME={{.HOSTNAME}} \
+        -e SMTP_HOST={{.SMTP_HOST}} \
+        -e SMTP_PORT={{.SMTP_PORT}} \
+        -e SMTP_USERNAME={{.SMTP_USERNAME}} \
+        -e SMTP_PASSWORD={{.SMTP_PASSWORD}} \
+        -e SMTP_USE_CREDENTIALS={{.SMTP_USE_CREDENTIALS}} \
+        -e SMTP_VALIDATE_CERTS={{.SMTP_VALIDATE_CERTS}} \
+        -e SMTP_FROM={{.SMTP_FROM}} \
+        -e SMTP_STARTTLS={{.SMTP_STARTTLS}} \
+        -e SMTP_SSL_TLS={{.SMTP_SSL_TLS}} \
         --network=mlops-network \
         {{.SERVER_IMAGE_REPO}}:latest
   run-postgres-container:
@@ -69,3 +104,22 @@ tasks:
     desc: "Run alembic commands"
     cmds:
       - uv run alembic {{.CLI_ARGS}}
+  upgrade-db:
+    desc: "Upgrade the database to the latest version"
+    cmds:
+      - uv run alembic upgrade head
+  new-migration:
+    desc: "Create a new alembic migration"
+    cmds:
+      - uv run alembic revision --autogenerate -m '{{.MIGRATION_MESSAGE}}'
+  run-mailpit:
+    desc: "Run the mailpit container locally"
+    cmds:
+      - |
+        docker run -d \
+        --name=mailpit \
+        --restart unless-stopped \
+        -p 8025:8025 \
+        -p 1025:1025 \
+        --network=mlops-network \
+        axllent/mailpit
