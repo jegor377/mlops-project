@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mailpit
+  labels:
+    app: mailpit
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mailpit
+  template:
+    metadata:
+      labels:
+        app: mailpit
+    spec:
+      containers:
+      - name: mailpit
+        image: axllent/mailpit:latest
+        ports:
+        - containerPort: 8025
+        - containerPort: 1025
+        env:
+        - name: MP_SMTP_AUTH_ACCEPT_ANY
+          value: "1"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8025
+          initialDelaySeconds: 5
+        startupProbe:
+          httpGet:
+            path: /
+            port: 8025
+          failureThreshold: 30
+          periodSeconds: 10
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        securityContext:
+          allowPrivilegeEscalation: false
+          privileged: false
+          readOnlyRootFilesystem: false

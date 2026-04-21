@@ -4,6 +4,8 @@ namespace: ml-server-dev
 resources:
   - ../../base
   - manifests/Namespace.yaml
+  - manifests/MailpitDeployment.yaml
+  - manifests/MailpitService.yaml
 patches:
   - path: patches/Gateway.yaml
     target:
