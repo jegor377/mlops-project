@@ -64,8 +64,6 @@ tasks:
         -e HOSTNAME={{.HOSTNAME}} \
         -e SMTP_HOST={{.SMTP_HOST}} \
         -e SMTP_PORT={{.SMTP_PORT}} \
-        -e SMTP_USERNAME={{.SMTP_USERNAME}} \
-        -e SMTP_PASSWORD={{.SMTP_PASSWORD}} \
         -e SMTP_USE_CREDENTIALS={{.SMTP_USE_CREDENTIALS}} \
         -e SMTP_VALIDATE_CERTS={{.SMTP_VALIDATE_CERTS}} \
         -e SMTP_FROM={{.SMTP_FROM}} \

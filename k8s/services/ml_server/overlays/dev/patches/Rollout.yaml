@@ -36,3 +36,43 @@
       volumeMounts:
         - name: tmp
           mountPath: /tmp
+- op: add
+  path: /spec/template/spec/containers/0/env/-
+  value:
+    name: HOSTNAME
+    value: ml-server-dev
+- op: add
+  path: /spec/template/spec/containers/0/env/-
+  value:
+    name: SMTP_HOST
+    value: mailpit
+- op: add
+  path: /spec/template/spec/containers/0/env/-
+  value:
+    name: SMTP_PORT
+    value: "1025"
+- op: add
+  path: /spec/template/spec/containers/0/env/-
+  value:
+    name: SMTP_USE_CREDENTIALS
+    value: "false"
+- op: add
+  path: /spec/template/spec/containers/0/env/-
+  value:
+    name: SMTP_VALIDATE_CERTS
+    value: "false"
+- op: add
+  path: /spec/template/spec/containers/0/env/-
+  value:
+    name: SMTP_FROM
+    value: no-reply@example.com
+- op: add
+  path: /spec/template/spec/containers/0/env/-
+  value:
+    name: SMTP_STARTTLS
+    value: "false"
+- op: add
+  path: /spec/template/spec/containers/0/env/-
+  value:
+    name: SMTP_SSL_TLS
+    value: "false"
