@@ -10,6 +10,7 @@ dependencies = [
     "asyncpg>=0.31.0",
     "bcrypt>=5.0.0",
     "fastapi>=0.127.0",
+    "fastapi-mail[httpx]>=1.6.2",
     "httpx>=0.28.1",
     "pydantic[email]>=2.12.5",
     "pytest>=9.0.2",
