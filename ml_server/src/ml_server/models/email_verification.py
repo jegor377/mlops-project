@@ -1,8 +1,14 @@
-from datetime import datetime, timezone
+from __future__ import annotations
+
+from datetime import datetime
+from typing import TYPE_CHECKING
 from sqlalchemy import ForeignKey, String, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.ml_server.models.base import Base
+
+if TYPE_CHECKING:
+    from src.ml_server.models.user import User
 
 
 class EmailVerification(Base):

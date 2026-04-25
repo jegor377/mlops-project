@@ -38,7 +38,7 @@ async def register(
     try:
         await session.flush()  # assigns new_user.id without committing yet
     except IntegrityError as e:
-        logger.error(f"IntegrityError during registration: {e.orig}") 
+        logger.error(f"IntegrityError during registration: {e.orig}")
         await session.rollback()
         raise HTTPException(status_code=409, detail="Registration failed")
     except Exception as e:
