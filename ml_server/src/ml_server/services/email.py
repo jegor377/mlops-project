@@ -4,7 +4,7 @@ from pydantic import EmailStr
 from src.ml_server.conf.settings import Settings
 
 
-async def send_verification_email(recipient: EmailStr, token: str, settings: Settings) -> None:
+async def send_verification_email(recipient: EmailStr, verify_url: str, settings: Settings) -> None:
     mail_config = ConnectionConfig(
         MAIL_USERNAME=settings.smtp_username,
         MAIL_PASSWORD=settings.smtp_password,
@@ -19,7 +19,6 @@ async def send_verification_email(recipient: EmailStr, token: str, settings: Set
 
     mailer = FastMail(mail_config)
     
-    verify_url = f"{settings.hostname}/api/auth/verify-email?token={token}"
     message = MessageSchema(
         subject="Verify your email address",
         recipients=[recipient],
