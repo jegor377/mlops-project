@@ -1,15 +1,48 @@
 import { useState } from "react";
+import { useNavigate } from "react-router";
 
 export default function RegisterPage() {
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
-  const handleSubmit = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    console.log({ name, email, password, confirmPassword });
+    setError(null);
+    setIsLoading(true);
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      setIsLoading(false);
+      return;
+    }
+    try {
+      const response = await fetch("/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, confirmPassword }),
+      });
+      if (response.ok) {
+        navigate("/login?registered=true");
+      } else {
+        const data = await response.json().catch(() => ({}));
+        if (response.status === 409) {
+          setError("An account with this email already exists.");
+        } else if (response.status === 500) {
+          setError("Something went wrong on our end. Please try again later.");
+        } else {
+          setError(data.message ?? "Registration failed. Please try again.");
+        }
+      }
+    } catch {
+      setError("Network error. Please check your connection.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -34,18 +67,6 @@ export default function RegisterPage() {
 
         {/* Form */}
         <div className="space-y-3 sm:space-y-4">
-          {/* Full name */}
-          <div>
-            <label className="text-xs text-gray-500">Full name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="mt-1 w-full px-3 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/80 focus:border-black transition"
-              placeholder="Jane Smith"
-            />
-          </div>
-
           {/* Email */}
           <div>
             <label className="text-xs text-gray-500">Email</label>
@@ -155,8 +176,19 @@ export default function RegisterPage() {
           </div>
 
           {/* Terms */}
-          <p className="text-xs text-gray-400 leading-relaxed">
-            By creating an account, you agree to our{" "}
+          <label className="flex items-start gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={agreedToTerms}
+            onChange={(e) => setAgreedToTerms(e.target.checked)}
+            className="peer w-5 h-5 rounded-full border-2 border-gray-300 appearance-none cursor-pointer
+              checked:bg-black checked:border-black
+              hover:border-gray-400
+              focus:outline-none focus:ring-2 focus:ring-black/20 focus:ring-offset-1
+              transition-all duration-200"
+          />
+          <span className="text-xs text-gray-400 leading-relaxed">
+            I agree to the{" "}
             <a href="#" className="text-gray-600 hover:text-gray-900 underline underline-offset-2">
               Terms of Service
             </a>{" "}
@@ -164,14 +196,53 @@ export default function RegisterPage() {
             <a href="#" className="text-gray-600 hover:text-gray-900 underline underline-offset-2">
               Privacy Policy
             </a>
-            .
-          </p>
+          </span>
+        </label>
+
+          {/* Error banner */}
+          {error && (
+            <div className="px-3 py-2.5 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-sm text-red-600">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              {error}
+            </div>
+          )}
 
           <button
             onClick={handleSubmit}
-            className="w-full bg-black text-white text-sm font-medium py-2 sm:py-2.5 rounded-lg hover:bg-gray-800 transition"
+            disabled={isLoading || !agreedToTerms}
+            className="w-full bg-black text-white text-sm font-medium py-2 sm:py-2.5 rounded-lg hover:bg-gray-800 transition disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
           >
-            Create account
+            {isLoading ? (
+              <>
+                <svg
+                  className="animate-spin h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+                Creating account...
+              </>
+            ) : (
+              "Create account"
+            )}
           </button>
         </div>
 
@@ -184,14 +255,14 @@ export default function RegisterPage() {
 
         {/* OAuth Buttons */}
         <div className="space-y-2 sm:space-y-3">
-          <button className="w-full flex items-center justify-center gap-2 border border-gray-200 rounded-lg py-2 sm:py-2.5 text-sm hover:bg-gray-50 transition">
+          <button className="w-full flex items-center justify-center gap-2 border border-gray-200 rounded-lg py-2 sm:py-2.5 text-sm hover:bg-gray-50 transition cursor-pointer">
             <svg width="16" height="16" viewBox="0 0 24 24">
               <path fill="#EA4335" d="M12 10.2v3.6h5.1c-.2 1.2-1.4 3.5-5.1 3.5-3.1 0-5.6-2.6-5.6-5.8s2.5-5.8 5.6-5.8c1.8 0 3 .8 3.7 1.4l2.5-2.4C16.9 3.2 14.7 2.3 12 2.3 6.9 2.3 2.8 6.5 2.8 11.5S6.9 20.7 12 20.7c6.9 0 9.2-4.8 9.2-7.3 0-.5 0-.8-.1-1.2H12z" />
             </svg>
             Continue with Google
           </button>
 
-          <button className="w-full flex items-center justify-center gap-2 border border-gray-200 rounded-lg py-2 sm:py-2.5 text-sm hover:bg-gray-50 transition">
+          <button className="w-full flex items-center justify-center gap-2 border border-gray-200 rounded-lg py-2 sm:py-2.5 text-sm hover:bg-gray-50 transition cursor-pointer">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 .5C5.7.5.9 5.3.9 11.6c0 4.9 3.2 9 7.6 10.4.6.1.8-.3.8-.6v-2.3c-3.1.7-3.7-1.5-3.7-1.5-.5-1.3-1.2-1.6-1.2-1.6-1-.7.1-.7.1-.7 1.1.1 1.7 1.2 1.7 1.2 1 .1.7 2.3 2.9 1.6.1-.7.4-1.2.7-1.5-2.5-.3-5.1-1.3-5.1-5.8 0-1.3.5-2.3 1.2-3.2-.1-.3-.5-1.6.1-3.3 0 0 1-.3 3.3 1.2a11.4 11.4 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.7.2 3 .1 3.3.8.9 1.2 2 1.2 3.2 0 4.5-2.6 5.5-5.1 5.8.4.3.7.9.7 1.9v2.8c0 .3.2.7.8.6 4.4-1.4 7.6-5.5 7.6-10.4C23.1 5.3 18.3.5 12 .5z" />
             </svg>
@@ -202,7 +273,7 @@ export default function RegisterPage() {
         {/* Footer */}
         <p className="text-xs text-gray-400 text-center mt-5 sm:mt-6">
           Already have an account?{" "}
-          <a href="#" className="text-gray-600 hover:text-gray-900">
+          <a href="/login" className="text-gray-600 hover:text-gray-900">
             Sign in
           </a>
         </p>
