@@ -1,12 +1,9 @@
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, patch, ANY
 
-from httpx import AsyncClient, ASGITransport
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.ml_server.main import app  # adjust to your app entrypoint
-from src.ml_server.dependencies.db import get_session
 from src.ml_server.models.email_verification import EmailVerification
 from src.ml_server.models.user import User
 
