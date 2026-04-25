@@ -64,3 +64,13 @@ tasks:
     desc: "Run formatter for all components"
     cmds:
       - uvx ruff format
+  build-images:
+    desc: "Build all Docker images"
+    deps:
+      - ml_server:build-image
+      - frontend:build-image
+  push-images:
+    desc: "Push all Docker images to registry"
+    deps:
+      - ml_server:push-image
+      - frontend:push-image
