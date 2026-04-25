@@ -70,7 +70,7 @@ async def register(
         token_url = req.app.state.settings.hostname
         token_url += req.app.url_path_for("verify_email")
         token_url += "?" + urlencode({"token": token})
-        
+
         await send_verification_email(
             new_user.email,
             token_url,

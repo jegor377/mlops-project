@@ -47,7 +47,7 @@ async def test_register_creates_inactive_user_and_sends_email(client, db_session
     verification = result.scalar_one_or_none()
     assert verification is not None
     assert verification.expires_at > datetime.now(timezone.utc)
-    
+
     token_url = HOSTNAME + VERIFY_URL
     token_url += "?" + urlencode({"token": verification.token})
 

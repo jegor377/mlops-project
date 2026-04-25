@@ -18,7 +18,7 @@ async def send_verification_email(recipient: EmailStr, verify_url: str, settings
     )
 
     mailer = FastMail(mail_config)
-    
+
     message = MessageSchema(
         subject="Verify your email address",
         recipients=[recipient],
