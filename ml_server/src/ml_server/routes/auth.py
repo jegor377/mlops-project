@@ -2,12 +2,13 @@ import bcrypt
 import secrets
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from typing import Annotated
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
 from datetime import datetime, timedelta, timezone
+from urllib.parse import urlencode
 
 from src.ml_server.models.user import User
 from src.ml_server.models.email_verification import EmailVerification
@@ -21,7 +22,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.post("/api/auth/register", status_code=201)
+@router.post("/auth/register", status_code=201)
 async def register(
     request: UserCreate,
     session: Annotated[AsyncSession, Depends(get_session)],
@@ -66,24 +67,25 @@ async def register(
         raise HTTPException(status_code=500, detail="Internal server error")
 
     try:
+        token_url = req.app.state.settings.hostname
+        token_url += req.app.url_path_for("verify_email")
+        token_url += "?" + urlencode({"token": token})
+        
         await send_verification_email(
             new_user.email,
-            token,
+            token_url,
             req.app.state.settings,
         )
     except Exception as e:
         # User and token are persisted — they can be resent later.
         # Don't roll back or 500; just log and inform the caller.
         logger.error(f"Failed to send verification email to {new_user.email}: {e}")
-        return {
-            "user_id": new_user.id,
-            "detail": "Account created but verification email could not be sent. Contact support.",
-        }
+        return Response(status_code=201)
 
-    return {"user_id": new_user.id, "detail": "Check your email to verify your account."}
+    return Response(status_code=201)
 
 
-@router.get("/api/auth/verify-email", status_code=200)
+@router.get("/auth/verify-email", status_code=200)
 async def verify_email(
     token: Annotated[str, Query()],
     session: Annotated[AsyncSession, Depends(get_session)],

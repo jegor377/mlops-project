@@ -30,7 +30,7 @@ def create_app(settings: Settings) -> FastAPI:
             del app.state.model
         await engine.dispose()
 
-    app = FastAPI(docs_url="/api/docs", lifespan=lifespan)
+    app = FastAPI(docs_url="/docs", lifespan=lifespan)
     app.include_router(general_router)
     app.include_router(auth_router)
     return app

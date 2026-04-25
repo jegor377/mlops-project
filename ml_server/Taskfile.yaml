@@ -71,6 +71,10 @@ tasks:
         -e SMTP_SSL_TLS={{.SMTP_SSL_TLS}} \
         --network=mlops-network \
         {{.SERVER_IMAGE_REPO}}:latest
+  push-image:
+    desc: "Push the mlops server docker image to registry"
+    cmds:
+      - docker push {{.SERVER_IMAGE_REPO}}:latest
   run-postgres-container:
     desc: "Run a postgres container locally"
     cmds:
