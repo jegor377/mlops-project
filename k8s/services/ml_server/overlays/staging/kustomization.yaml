@@ -7,4 +7,4 @@ patches:
   - path: patches/HTTPRoute.yaml
 images:
   - name: igorsantarek/ml_server
-    newTag: 0.9.3-0020-g2543aec
+    newTag: 0.9.3-0027-g1e95120
