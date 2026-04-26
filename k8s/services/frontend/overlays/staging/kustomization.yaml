@@ -12,4 +12,4 @@ patches:
   - path: patches/HTTPRoute.yaml
 images:
   - name: igorsantarek/frontend
-    newTag: 0.2.2-0000-geff1304
+    newTag: 0.2.2-0027-g1e95120
