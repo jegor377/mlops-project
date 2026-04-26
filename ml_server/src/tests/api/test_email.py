@@ -23,6 +23,7 @@ VALID_PAYLOAD = {"email": "igor@example.com", "password": "StrongPass1!"}
 # register
 # ---------------------------------------------------------------------------
 
+
 async def test_register_creates_inactive_user_and_sends_email(client, db_session):
     with patch(
         "src.ml_server.routes.auth.send_verification_email",
@@ -33,9 +34,7 @@ async def test_register_creates_inactive_user_and_sends_email(client, db_session
     assert response.status_code == 201
 
     # User persisted and inactive
-    result = await db_session.execute(
-        select(User).order_by(User.id.desc()).limit(1)
-    )
+    result = await db_session.execute(select(User).order_by(User.id.desc()).limit(1))
     user = result.scalar_one_or_none()
     assert user is not None
     assert user.is_active is False
@@ -55,7 +54,9 @@ async def test_register_creates_inactive_user_and_sends_email(client, db_session
 
 
 async def test_register_duplicate_email_returns_409(client, db_session):
-    with patch("src.ml_server.routes.auth.send_verification_email", new_callable=AsyncMock):
+    with patch(
+        "src.ml_server.routes.auth.send_verification_email", new_callable=AsyncMock
+    ):
         await client.post(REGISTER_URL, json=VALID_PAYLOAD)
         response = await client.post(REGISTER_URL, json=VALID_PAYLOAD)
 
@@ -78,6 +79,7 @@ async def test_register_email_send_failure_still_returns_201(client, db_session)
 # ---------------------------------------------------------------------------
 # verify-email
 # ---------------------------------------------------------------------------
+
 
 async def _create_user_and_token(
     session: AsyncSession,
