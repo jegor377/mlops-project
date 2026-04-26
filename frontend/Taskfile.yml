@@ -3,7 +3,7 @@
 version: '3'
 
 tasks:
-  run-local:
+  run-dev:
     desc: Run the development server
     cmds:
       - npm run dev
@@ -19,3 +19,7 @@ tasks:
     desc: Run the frontend container locally
     cmds:
       - docker run -d -p 3000:3000 {{.FRONTEND_IMAGE_REPO}}:latest
+  push-image:
+    desc: Push the frontend docker image to registry
+    cmds:
+      - docker push {{.FRONTEND_IMAGE_REPO}}:latest

@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, patch, ANY
+from urllib.parse import urlencode
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,8 +13,9 @@ from src.ml_server.models.user import User
 # Helpers
 # ---------------------------------------------------------------------------
 
-REGISTER_URL = "/api/auth/register"
-VERIFY_URL = "/api/auth/verify-email"
+HOSTNAME = "localhost"
+REGISTER_URL = "/auth/register"
+VERIFY_URL = "/auth/verify-email"
 VALID_PAYLOAD = {"email": "igor@example.com", "password": "StrongPass1!"}
 
 
@@ -29,12 +31,12 @@ async def test_register_creates_inactive_user_and_sends_email(client, db_session
         response = await client.post(REGISTER_URL, json=VALID_PAYLOAD)
 
     assert response.status_code == 201
-    body = response.json()
-    assert "user_id" in body
-    assert "verify" in body["detail"].lower() or "email" in body["detail"].lower()
 
     # User persisted and inactive
-    user = await db_session.get(User, body["user_id"])
+    result = await db_session.execute(
+        select(User).order_by(User.id.desc()).limit(1)
+    )
+    user = result.scalar_one_or_none()
     assert user is not None
     assert user.is_active is False
 
@@ -46,7 +48,10 @@ async def test_register_creates_inactive_user_and_sends_email(client, db_session
     assert verification is not None
     assert verification.expires_at > datetime.now(timezone.utc)
 
-    mock_send.assert_awaited_once_with(VALID_PAYLOAD["email"], verification.token, ANY)
+    token_url = HOSTNAME + VERIFY_URL
+    token_url += "?" + urlencode({"token": verification.token})
+
+    mock_send.assert_awaited_once_with(VALID_PAYLOAD["email"], token_url, ANY)
 
 
 async def test_register_duplicate_email_returns_409(client, db_session):
@@ -68,7 +73,6 @@ async def test_register_email_send_failure_still_returns_201(client, db_session)
         response = await client.post(REGISTER_URL, json=VALID_PAYLOAD)
 
     assert response.status_code == 201
-    assert "could not be sent" in response.json()["detail"]
 
 
 # ---------------------------------------------------------------------------

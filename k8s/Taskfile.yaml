@@ -64,3 +64,23 @@ tasks:
     desc: "Add gcloud context to kubectl"
     cmds:
       - gcloud container clusters get-credentials ml-server-cluster --zone us-central1-a
+  kind-load-ml-server-image:
+    desc: "Load the ML server Docker image into the Kind cluster"
+    cmds:
+      - kind load docker-image {{.SERVER_IMAGE_REPO}}:latest --name dev-cluster
+  kind-load-frontend-image:
+    desc: "Load the frontend Docker image into the Kind cluster"
+    cmds:
+      - kind load docker-image {{.FRONTEND_IMAGE_REPO}}:latest --name dev-cluster
+  kind-load-imgs:
+    desc: "Load the ML server Docker image into the Kind cluster"
+    deps:
+      - kind-load-ml-server-image
+      - kind-load-frontend-image
+  psql-k8s-dev:
+    desc: "Connect to the Postgres instance running in the dev Kubernetes environment"
+    cmds:
+      - |
+        PSQL_URI=$(kubectl get secret cnpg-cluster-app -o yaml | yq ".data.uri" | base64 -d)
+        PSQL_URI=$(sed 's/cnpg-cluster-rw.ml-server-dev:5432/127.0.0.1:8082/' <<< "$PSQL_URI")
+        psql "$PSQL_URI"
