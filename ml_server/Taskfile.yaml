@@ -39,7 +39,8 @@ tasks:
       SMTP_STARTTLS: false
       SMTP_SSL_TLS: false
     cmds:
-      - uv run pytest
+      - uv run pytest {{.CLI_ARGS | default ""}}
+      
   build-image:
     desc: "Build the mlops server docker image"
     cmds:
