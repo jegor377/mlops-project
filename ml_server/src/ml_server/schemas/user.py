@@ -16,3 +16,8 @@ class UserCreate(UserBase):
         if len(v) > 72:
             raise ValueError("Password must be at most 72 characters")
         return v
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str

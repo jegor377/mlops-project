@@ -23,6 +23,7 @@ if config.config_file_name is not None:
 # target_metadata = mymodel.Base.metadata
 from src.ml_server.models.base import Base
 from src.ml_server.models import *  # noqa: F401, F403
+
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
@@ -32,6 +33,7 @@ target_metadata = Base.metadata
 
 
 import os
+
 
 def get_url():
     res = os.environ.get("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
@@ -74,7 +76,7 @@ async def run_async_migrations() -> None:
     and associate a connection with the context.
 
     """
-    
+
     config.set_main_option("sqlalchemy.url", get_url())
 
     connectable = async_engine_from_config(

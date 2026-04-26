@@ -12,7 +12,10 @@ from urllib.parse import urlencode
 
 from src.ml_server.models.user import User
 from src.ml_server.models.email_verification import EmailVerification
-from src.ml_server.schemas.user import UserCreate
+from src.ml_server.models.user_session import UserSession
+
+from src.ml_server.schemas.user import UserCreate, UserLogin
+
 from src.ml_server.dependencies.db import get_session
 
 from src.ml_server.services.email import send_verification_email
@@ -96,19 +99,23 @@ async def verify_email(
     verification = result.scalar_one_or_none()
 
     if verification is None:
-        raise HTTPException(status_code=400, detail="Invalid or expired verification link.")
+        raise HTTPException(
+            status_code=400, detail="Invalid or expired verification link."
+        )
 
     if verification.expires_at < datetime.now(timezone.utc):
         await session.delete(verification)
         await session.commit()
-        raise HTTPException(status_code=400, detail="Invalid or expired verification link.")
+        raise HTTPException(
+            status_code=400, detail="Invalid or expired verification link."
+        )
 
-    result = await session.execute(
-        select(User).where(User.id == verification.user_id)
-    )
+    result = await session.execute(select(User).where(User.id == verification.user_id))
     user = result.scalar_one_or_none()
     if user is None:
-        raise HTTPException(status_code=400, detail="Invalid or expired verification link.")
+        raise HTTPException(
+            status_code=400, detail="Invalid or expired verification link."
+        )
 
     user.is_active = True
     user.activated_at = datetime.now(timezone.utc)
@@ -122,3 +129,61 @@ async def verify_email(
         raise HTTPException(status_code=500, detail="Internal server error")
 
     return {"detail": "Email verified. Your account is now active."}
+
+
+@router.post("/auth/login", status_code=200)
+async def login(
+    request: UserLogin,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    req: Request,
+):
+    result = await session.execute(select(User).where(User.email == request.email))
+    user = result.scalar_one_or_none()
+
+    # Constant-time check even if user doesn't exist (prevent user enumeration)
+    dummy_hash = "$2b$12$xHAznIgwigxdRMy6SN5KY.KrVqPfhKAxI7O6B.h28oAxffCGkJpLO"
+    password_to_check = user.password_hash if user else dummy_hash
+
+    password_valid = bcrypt.checkpw(
+        request.password.encode("utf-8"),
+        password_to_check.encode("utf-8"),
+    )
+
+    if not user or not password_valid:
+        raise HTTPException(status_code=401, detail="Invalid credentials.")
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=403,
+            detail="Account not yet activated. Please verify your email.",
+        )
+
+    # Issue session token
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.now(timezone.utc) + timedelta(
+        hours=req.app.state.settings.session_expire_hours
+    )
+    session_record = UserSession(
+        user_id=user.id,
+        token=token,
+        expires_at=expires_at,
+    )
+    session.add(session_record)
+
+    try:
+        await session.commit()
+    except Exception as e:
+        await session.rollback()
+        logger.error(f"Failed to persist session for user {user.id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+    response = Response(status_code=200)
+    response.set_cookie(
+        key="session",
+        value=token,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        expires=int(expires_at.timestamp()),
+    )
+    return response
