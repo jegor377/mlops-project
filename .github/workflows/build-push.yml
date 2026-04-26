@@ -103,7 +103,7 @@ jobs:
         for i in {1..5}; do
           git pull --rebase origin main
           task utils:update-image-tags SERVICE=${{ matrix.service }} NEW_TAG=${{ steps.image-tag.outputs.version }} ENVIRONMENT=${{ needs.filter.outputs.environment }}
-          git add k8s/services/${{ matrix.service }}/overlays/*/patches/Rollout.yaml
+          git add k8s/services/${{ matrix.service }}/overlays/*/kustomization.yaml
           git commit -m "chore: Update image version to ${{ steps.image-tag.outputs.version }} on ${{ needs.filter.outputs.environment }} environment in ${{ matrix.service }} service" && \
           git push origin HEAD:main && break || git reset HEAD~1
           git checkout -- .
