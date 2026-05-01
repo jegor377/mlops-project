@@ -4,9 +4,7 @@ from pydantic import EmailStr
 from src.ml_server.conf.settings import Settings
 
 
-async def send_verification_email(
-    recipient: EmailStr, verify_url: str, settings: Settings
-) -> None:
+def _make_mailer(settings: Settings) -> FastMail:
     mail_config = ConnectionConfig(
         MAIL_USERNAME=settings.smtp_username,
         MAIL_PASSWORD=settings.smtp_password,
@@ -18,9 +16,12 @@ async def send_verification_email(
         USE_CREDENTIALS=settings.smtp_use_credentials,
         VALIDATE_CERTS=settings.smtp_validate_certs,
     )
+    return FastMail(mail_config)
 
-    mailer = FastMail(mail_config)
 
+async def send_verification_email(
+    recipient: EmailStr, verify_url: str, settings: Settings
+) -> None:
     message = MessageSchema(
         subject="Verify your email address",
         recipients=[recipient],
@@ -31,4 +32,21 @@ async def send_verification_email(
         ),
         subtype=MessageType.html,
     )
-    await mailer.send_message(message)
+    await _make_mailer(settings).send_message(message)
+
+
+async def send_password_reset_email(
+    recipient: EmailStr, reset_url: str, settings: Settings
+) -> None:
+    message = MessageSchema(
+        subject="Reset your password",
+        recipients=[recipient],
+        body=(
+            f"<p>We received a request to reset your Volta password.</p>"
+            f'<p><a href="{reset_url}">Reset password</a></p>'
+            f"<p>This link expires in {settings.password_reset_expire_hours} hour(s).</p>"
+            f"<p>If you didn't request this, you can safely ignore this email.</p>"
+        ),
+        subtype=MessageType.html,
+    )
+    await _make_mailer(settings).send_message(message)
