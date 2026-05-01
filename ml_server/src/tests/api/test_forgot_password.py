@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, patch, ANY
-from urllib.parse import urlencode
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
