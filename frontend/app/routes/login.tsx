@@ -108,7 +108,7 @@ export default function LoginPage() {
           <div>
             <div className="flex items-center justify-between">
               <label className="text-xs text-gray-500">Password</label>
-              <a href="#" className="text-xs text-gray-400 hover:text-gray-600">
+              <a href="/forgot-password" className="text-xs text-gray-400 hover:text-gray-600">
                 Forgot?
               </a>
             </div>
@@ -159,7 +159,7 @@ export default function LoginPage() {
         {/* Footer */}
         <p className="text-xs text-gray-400 text-center mt-5 sm:mt-6">
           Don't have an account?{" "}
-          <a href="#" className="text-gray-600 hover:text-gray-900">
+          <a href="/register" className="text-gray-600 hover:text-gray-900">
             Sign up
           </a>
         </p>
