@@ -24,3 +24,4 @@ class Settings:
         self.smtp_starttls = os.getenv("SMTP_STARTTLS", "true").lower() == "true"
         self.smtp_ssl_tls = os.getenv("SMTP_SSL_TLS", "false").lower() == "true"
         self.session_expire_hours = 24
+        self.password_reset_expire_hours = 1

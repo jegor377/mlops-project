@@ -113,8 +113,16 @@ tasks:
       - uv run alembic upgrade head
   new-migration:
     desc: "Create a new alembic migration"
+    silent: true
     cmds:
-      - uv run alembic revision --autogenerate -m '{{.MIGRATION_MESSAGE}}'
+      - |
+        echo -n "Enter migration message: "
+        read MIGRATION_MESSAGE
+        if [ -z "$MIGRATION_MESSAGE" ]; then
+          echo "Migration message cannot be empty"
+          exit 1
+        fi
+        uv run alembic revision --autogenerate -m "$MIGRATION_MESSAGE"
   run-mailpit:
     desc: "Run the mailpit container locally"
     cmds:

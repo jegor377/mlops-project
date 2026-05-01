@@ -13,12 +13,13 @@ from urllib.parse import urlencode
 from src.ml_server.models.user import User
 from src.ml_server.models.email_verification import EmailVerification
 from src.ml_server.models.user_session import UserSession
+from src.ml_server.models.password_reset import PasswordReset
 
-from src.ml_server.schemas.user import UserCreate, UserLogin
+from src.ml_server.schemas.user import UserCreate, UserLogin, ForgotPassword, ResetPassword
 
 from src.ml_server.dependencies.db import get_session
 
-from src.ml_server.services.email import send_verification_email
+from src.ml_server.services.email import send_verification_email, send_password_reset_email
 
 
 router = APIRouter()
@@ -187,3 +188,92 @@ async def login(
         expires=int(expires_at.timestamp()),
     )
     return response
+
+
+@router.post("/auth/forgot-password", status_code=200)
+async def forgot_password(
+    request: ForgotPassword,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    req: Request,
+):
+    result = await session.execute(select(User).where(User.email == request.email))
+    user = result.scalar_one_or_none()
+
+    # Always return 200 — never reveal whether the email exists
+    if user is None or not user.is_active:
+        return Response(status_code=200)
+
+    # Invalidate any existing reset tokens for this user
+    existing = await session.execute(
+        select(PasswordReset).where(PasswordReset.user_id == user.id)
+    )
+    for record in existing.scalars().all():
+        await session.delete(record)
+
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.now(timezone.utc) + timedelta(
+        hours=req.app.state.settings.password_reset_expire_hours
+    )
+    reset = PasswordReset(
+        user_id=user.id,
+        token=token,
+        expires_at=expires_at,
+    )
+    session.add(reset)
+
+    try:
+        await session.commit()
+    except Exception as e:
+        await session.rollback()
+        logger.error(f"Failed to persist password reset token for user {user.id}: {e}")
+        return Response(status_code=200)  # Still don't leak anything
+
+    try:
+        token_url = req.app.state.settings.hostname
+        token_url += "/reset-password"
+        token_url += "?" + urlencode({"token": token})
+
+        await send_password_reset_email(
+            user.email,
+            token_url,
+            req.app.state.settings,
+        )
+    except Exception as e:
+        logger.error(f"Failed to send password reset email to {user.email}: {e}")
+
+    return Response(status_code=200)
+
+
+@router.post("/auth/reset-password", status_code=200)
+async def reset_password(
+    request: ResetPassword,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    result = await session.execute(
+        select(PasswordReset).where(PasswordReset.token == request.token)
+    )
+    reset = result.scalar_one_or_none()
+
+    if reset is None or reset.expires_at < datetime.now(timezone.utc):
+        if reset is not None:
+            await session.delete(reset)
+            await session.commit()
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link.")
+
+    result = await session.execute(select(User).where(User.id == reset.user_id))
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset link.")
+
+    password_hash = bcrypt.hashpw(request.new_password.encode("utf-8"), bcrypt.gensalt())
+    user.password_hash = password_hash.decode("utf-8")
+    await session.delete(reset)
+
+    try:
+        await session.commit()
+    except Exception as e:
+        await session.rollback()
+        logger.error(f"Failed to reset password for user {user.id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+    return Response(status_code=200)
