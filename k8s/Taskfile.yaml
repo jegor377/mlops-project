@@ -1,18 +1,27 @@
 version: '3'
 
 tasks:
-  port-forward:
+  port-forward-traefik:
     desc: "Port forward the Traefik gateway to localhost"
+    watch: true
     cmds:
       - kubectl -n traefik-system port-forward svc/traefik 80
   port-forward-psql:
     desc: "Port forward the postgres service to localhost"
+    watch: true
     cmds:
       - kubectl -n ml-server-dev port-forward svc/cnpg-cluster-rw 8082:5432
   port-forward-mailpit:
     desc: "Port forward the Mailpit service to localhost"
+    watch: true
     cmds:
       - kubectl -n ml-server-dev port-forward svc/mailpit 8026:8025
+  port-forward:
+    desc: "Port forward multiple services to localhost"
+    deps:
+      - port-forward-traefik
+      - port-forward-psql
+      - port-forward-mailpit
   apply-dev-resources:
     desc: "Apply development resources to the cluster"
     cmds:
