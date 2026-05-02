@@ -178,12 +178,13 @@ async def login(
         logger.error(f"Failed to persist session for user {user.id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
+    secure = req.app.state.settings.env != "development"
     response = Response(status_code=200)
     response.set_cookie(
         key="session",
         value=token,
         httponly=True,
-        secure=True,
+        secure=secure,
         samesite="lax",
         expires=int(expires_at.timestamp()),
     )
@@ -277,3 +278,42 @@ async def reset_password(
         raise HTTPException(status_code=500, detail="Internal server error")
 
     return Response(status_code=200)
+
+
+@router.get("/auth/me", status_code=200)
+async def me(
+    request: Request,
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    token = request.cookies.get("session")
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    result = await session.execute(
+        select(UserSession).where(UserSession.token == token)
+    )
+    user_session = result.scalar_one_or_none()
+
+    if not user_session or user_session.expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    result = await session.execute(select(User).where(User.id == user_session.user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    return {"email": user.email, "id": user.id}
+
+
+@router.post("/auth/logout", status_code=200)
+async def logout(request: Request, session: Annotated[AsyncSession, Depends(get_session)]):
+    token = request.cookies.get("session")
+    if token:
+        result = await session.execute(select(UserSession).where(UserSession.token == token))
+        user_session = result.scalar_one_or_none()
+        if user_session:
+            await session.delete(user_session)
+            await session.commit()
+    response = Response(status_code=200)
+    response.delete_cookie("session")
+    return response

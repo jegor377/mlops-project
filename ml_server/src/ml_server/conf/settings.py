@@ -4,6 +4,7 @@ import os
 class Settings:
     def __init__(self):
         raw_uri = os.getenv("DB_URI", "")
+        self.env = os.getenv("ENV", "development")
         self.hostname = os.getenv("HOSTNAME")
         self.db_uri = raw_uri.replace("postgresql://", "postgresql+asyncpg://")
         self.load_model = os.getenv("LOAD_MODEL", "false").lower() == "true"
