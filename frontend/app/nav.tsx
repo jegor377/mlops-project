@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useAuth } from "./context/auth";
+import { useNavigate } from "react-router";
 
 const NAV_LINKS = ["Product", "Pricing", "Docs", "Blog"];
 
@@ -15,7 +17,15 @@ function useScrolled() {
 export default function Nav() {
     const [menuOpen, setMenuOpen] = useState(false);
     const scrolled = useScrolled();
+    const { user, loading, setUser } = useAuth();
+    const navigate = useNavigate();
     
+    const handleLogout = async () => {
+        await fetch("/auth/logout", { method: "POST", credentials: "include" });
+        setUser(null);
+        navigate("/");
+    };
+
     return (
         <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm" : "bg-transparent"}`}>
             <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -38,10 +48,23 @@ export default function Nav() {
 
                 {/* CTA */}
                 <div className="hidden md:flex items-center gap-3">
-                    <a href="/login" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Sign in</a>
-                    <a href="/register" className="text-sm bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors font-medium">
-                        Get started →
-                    </a>
+                    {!loading && (
+                        user ? (
+                            <>
+                            <a href="/dashboard" className="text-sm text-gray-500 hover:text-gray-900">Dashboard</a>
+                            <button onClick={handleLogout} className="text-sm bg-black text-white px-4 py-2 rounded-lg cursor-pointer">
+                                Logout
+                            </button>
+                            </>
+                        ) : (
+                            <>
+                            <a href="/login" className="text-sm text-gray-500 hover:text-gray-900">Sign in</a>
+                            <a href="/register" className="text-sm bg-black text-white px-4 py-2 rounded-lg">
+                                Get started →
+                            </a>
+                            </>
+                        )
+                    )}
                 </div>
 
                 {/* Mobile burger */}
