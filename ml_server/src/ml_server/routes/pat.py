@@ -12,7 +12,6 @@ from src.ml_server.dependencies.db import get_session
 from src.ml_server.dependencies.current_user import get_current_user
 from src.ml_server.models.pat import PersonalAccessToken
 from src.ml_server.models.user import User
-from src.ml_server.models.user_session import UserSession
 from src.ml_server.schemas.pat import (
     PATCreate,
     PATCreateResponse,
