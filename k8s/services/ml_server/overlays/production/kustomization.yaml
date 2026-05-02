@@ -5,6 +5,12 @@ resources:
   - ../common/MigrationJob.yaml
 patches:
   - path: patches/HTTPRoute.yaml
+  - path: patches/Rollout.yaml
+    target:
+      group: argoproj.io
+      version: v1alpha1
+      kind: Rollout
+      name: ml-server
 images:
   - name: igorsantarek/ml_server
     newTag: 0.9.3
