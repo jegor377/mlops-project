@@ -18,6 +18,7 @@ from src.ml_server.models.password_reset import PasswordReset
 from src.ml_server.schemas.user import UserCreate, UserLogin, ForgotPassword, ResetPassword
 
 from src.ml_server.dependencies.db import get_session
+from src.ml_server.dependencies.current_user import get_current_user
 
 from src.ml_server.services.email import send_verification_email, send_password_reset_email
 
@@ -282,26 +283,8 @@ async def reset_password(
 
 @router.get("/auth/me", status_code=200)
 async def me(
-    request: Request,
-    session: Annotated[AsyncSession, Depends(get_session)],
+    user: Annotated[User, Depends(get_current_user)],
 ):
-    token = request.cookies.get("session")
-    if not token:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
-    result = await session.execute(
-        select(UserSession).where(UserSession.token == token)
-    )
-    user_session = result.scalar_one_or_none()
-
-    if not user_session or user_session.expires_at < datetime.now(timezone.utc):
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
-    result = await session.execute(select(User).where(User.id == user_session.user_id))
-    user = result.scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
     return {"email": user.email, "id": user.id}
 
 
