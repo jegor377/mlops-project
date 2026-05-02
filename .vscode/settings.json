@@ -1,0 +1,9 @@
+{
+  "terminal.integrated.profiles.linux": {
+    "project-shell": {
+      "path": "/bin/bash",
+      "args": ["-c", "devbox shell"]
+    }
+  },
+  "terminal.integrated.defaultProfile.linux": "project-shell"
+}
