@@ -4,11 +4,12 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.ml_server.dependencies.db import get_session
+from src.ml_server.dependencies.current_user import get_current_user
 from src.ml_server.models.pat import PersonalAccessToken
 from src.ml_server.models.user import User
 from src.ml_server.models.user_session import UserSession
@@ -29,41 +30,14 @@ def _hash_token(raw: str) -> str:
     return hashlib.sha256(raw.encode()).hexdigest()
 
 
-async def _get_current_user(
-    request: Request,
-    session: AsyncSession,
-) -> User:
-    """Resolve session cookie → User. Raises 401 if invalid/expired."""
-    token = request.cookies.get("session")
-    if not token:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
-    result = await session.execute(
-        select(UserSession).where(UserSession.token == token)
-    )
-    user_session = result.scalar_one_or_none()
-
-    if not user_session or user_session.expires_at < datetime.now(timezone.utc):
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
-    result = await session.execute(
-        select(User).where(User.id == user_session.user_id)
-    )
-    user = result.scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    return user
-
-
 @router.post("/api/tokens", status_code=201, response_model=PATCreateResponse)
 async def create_pat(
     body: PATCreate,
     request: Request,
     session: Annotated[AsyncSession, Depends(get_session)],
+    user: Annotated[User, Depends(get_current_user)],
 ) -> PATCreateResponse:
     """Create a new PAT. Returns raw token once — store it securely."""
-    user = await _get_current_user(request, session)
-
     # Validate scopes
     invalid = set(body.scopes) - VALID_SCOPES
     if invalid:
@@ -122,9 +96,9 @@ async def create_pat(
 async def list_pats(
     request: Request,
     session: Annotated[AsyncSession, Depends(get_session)],
+    user: Annotated[User, Depends(get_current_user)],
 ) -> list[PATResponse]:
     """List all PATs for current user (active and inactive)."""
-    user = await _get_current_user(request, session)
 
     result = await session.execute(
         select(PersonalAccessToken)
@@ -140,10 +114,9 @@ async def revoke_pat(
     token_id: int,
     request: Request,
     session: Annotated[AsyncSession, Depends(get_session)],
-) -> dict:
+    user: Annotated[User, Depends(get_current_user)],
+) -> None:
     """Revoke (soft-delete) a PAT. Only owner can revoke."""
-    user = await _get_current_user(request, session)
-
     result = await session.execute(
         select(PersonalAccessToken).where(
             PersonalAccessToken.id == token_id,
@@ -167,4 +140,4 @@ async def revoke_pat(
         logger.error(f"Failed to revoke PAT {token_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-    return {"detail": "Token revoked"}
+    return Response(status_code=200)
