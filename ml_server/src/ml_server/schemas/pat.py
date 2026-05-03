@@ -4,12 +4,7 @@ from pydantic import BaseModel, Field
 
 
 VALID_SCOPES = {
-    "read:events",
-    "write:events",
-    "read:users",
-    "write:users",
-    "read:analytics",
-    "admin",
+    "inference:basic",
 }
 
 

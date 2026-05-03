@@ -18,15 +18,12 @@ from src.ml_server.schemas.pat import (
     PATResponse,
     VALID_SCOPES,
 )
+from src.ml_server.services.pat import _hash_token
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 TOKEN_PREFIX = "vlt_"
-
-
-def _hash_token(raw: str) -> str:
-    return hashlib.sha256(raw.encode()).hexdigest()
 
 
 @router.post("/api/tokens", status_code=201, response_model=PATCreateResponse)
