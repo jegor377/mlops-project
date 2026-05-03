@@ -90,12 +90,6 @@ const icons = {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function generateToken(): string {
-  const prefix = "vlt_";
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  return prefix + Array.from({ length: 40 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-}
-
 function expiryDays(expiry: ExpiryOption): number | null {
   if (expiry === "No expiration") return null;
   if (expiry === "1 year") return 365;
@@ -332,8 +326,18 @@ function CreateTokenModal({ show, onClose, onCreate }: CreateTokenModalProps) {
     onClose();
   };
 
-  const handleCreate = () => {
-    const token = generateToken();
+  const handleCreate = async () => {
+    const token = await fetch("/api/tokens", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name,
+        scopes: selectedScopes,
+        expires_in_days: expiryDays(expiry)
+      })
+    }).then(res => res.json());
     setGeneratedToken(token);
     setStep(2);
 
