@@ -135,12 +135,7 @@ function mapAPIToken(t: APIPATResponse): Token {
 }
 
 const SCOPES: Scope[] = [
-  { id: "read:events", label: "Read Events", group: "Events" },
-  { id: "write:events", label: "Write Events", group: "Events" },
-  { id: "read:users", label: "Read Users", group: "Users" },
-  { id: "write:users", label: "Write Users", group: "Users" },
-  { id: "read:analytics", label: "Read Analytics", group: "Analytics" },
-  { id: "admin", label: "Full Access (Admin)", group: "Admin" },
+  { id: "inference:basic", label: "Basic Inference", group: "Inference" },
 ];
 
 const EXPIRY_OPTIONS: ExpiryOption[] = ["7 days", "30 days", "90 days", "1 year", "No expiration"];
