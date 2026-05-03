@@ -1,5 +1,5 @@
 from fastapi import Depends, HTTPException, Request
-from typing import AsyncGenerator, Annotated
+from typing import Annotated
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from datetime import datetime, timezone
