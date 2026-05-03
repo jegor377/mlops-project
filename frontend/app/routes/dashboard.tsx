@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { ReactNode, SVGProps } from "react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -15,18 +15,23 @@ interface Token {
   scopes: string[];
   expiry: string | null;
   created: string;
-  lastUsed: string;
+  lastUsed: string | null;
   active: boolean;
 }
 
-interface NewTokenData {
+interface APIPATResponse {
+  id: number;
   name: string;
-  prefix: string;
+  token_prefix: string;
   scopes: string[];
-  expiry: string | null;
-  created: string;
-  lastUsed: string;
-  active: boolean;
+  expires_at: string | null;
+  created_at: string;
+  last_used_at: string | null;
+  is_active: boolean;
+}
+
+interface APIPATCreateResponse extends APIPATResponse {
+  raw_token: string;
 }
 
 interface Scope {
@@ -86,6 +91,8 @@ const icons = {
   shield: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
   funnels: "M3 4h18M7 8h10M11 12h2M10 16h4",
   chevron: "M9 18l6-6-6-6",
+  refresh: "M1 4v6h6M23 20v-6h-6M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15",
+  alertCircle: "M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM12 8v4M12 16h.01",
 } as const;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -94,6 +101,37 @@ function expiryDays(expiry: ExpiryOption): number | null {
   if (expiry === "No expiration") return null;
   if (expiry === "1 year") return 365;
   return parseInt(expiry);
+}
+
+function formatDate(iso: string | null): string {
+  if (!iso) return "Never";
+  return new Date(iso).toISOString().split("T")[0];
+}
+
+function formatRelative(iso: string | null): string {
+  if (!iso) return "Never";
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  return formatDate(iso);
+}
+
+function mapAPIToken(t: APIPATResponse): Token {
+  return {
+    id: t.id,
+    name: t.name,
+    prefix: t.token_prefix,
+    scopes: t.scopes,
+    expiry: t.expires_at ? formatDate(t.expires_at) : null,
+    created: formatDate(t.created_at),
+    lastUsed: formatRelative(t.last_used_at),
+    active: t.is_active,
+  };
 }
 
 const SCOPES: Scope[] = [
@@ -106,39 +144,6 @@ const SCOPES: Scope[] = [
 ];
 
 const EXPIRY_OPTIONS: ExpiryOption[] = ["7 days", "30 days", "90 days", "1 year", "No expiration"];
-
-const INITIAL_TOKENS: Token[] = [
-  {
-    id: 1,
-    name: "CI/CD Pipeline",
-    prefix: "vlt_K9mX",
-    scopes: ["read:events", "write:events"],
-    expiry: "2026-12-31",
-    created: "2026-01-10",
-    lastUsed: "2 hours ago",
-    active: true,
-  },
-  {
-    id: 2,
-    name: "Analytics Dashboard",
-    prefix: "vlt_Rp2Q",
-    scopes: ["read:analytics", "read:events"],
-    expiry: "2026-06-30",
-    created: "2026-02-20",
-    lastUsed: "Yesterday",
-    active: true,
-  },
-  {
-    id: 3,
-    name: "Legacy Integration",
-    prefix: "vlt_7fNL",
-    scopes: ["read:users"],
-    expiry: "2026-03-01",
-    created: "2025-09-05",
-    lastUsed: "3 months ago",
-    active: false,
-  },
-];
 
 const NAV: NavItem[] = [
   { id: "overview", label: "Overview", icon: "overview" },
@@ -173,12 +178,19 @@ function Pill({ children, variant = "default" }: PillProps) {
 
 interface CopyButtonProps {
   value: string;
+  onFailed?: () => void;
 }
 
-function CopyButton({ value }: CopyButtonProps) {
+function CopyButton({ value, onFailed }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
   const handle = () => {
-    navigator.clipboard?.writeText(value).catch(() => {});
+    if (navigator.clipboard === undefined) {
+      onFailed?.();
+      return;
+    }
+    navigator.clipboard?.writeText(value).catch(() => {
+      onFailed?.();
+    });
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -186,11 +198,12 @@ function CopyButton({ value }: CopyButtonProps) {
     <button
       onClick={handle}
       title="Copy to clipboard"
-      className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-all duration-200 mono font-medium ${
+      className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-all
+        duration-200 mono font-medium ${
         copied
           ? "border-emerald-200 bg-emerald-50 text-emerald-600"
           : "border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700"
-      }`}
+      } cursor-pointer`}
     >
       <Icon d={copied ? icons.check : icons.copy} size={13} />
       {copied ? "Copied" : "Copy"}
@@ -207,9 +220,7 @@ interface ModalProps {
 function Modal({ show, onClose, children }: ModalProps) {
   useEffect(() => {
     document.body.style.overflow = show ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
+    return () => { document.body.style.overflow = ""; };
   }, [show]);
 
   if (!show) return null;
@@ -251,14 +262,12 @@ function TokenRow({ token, onRevoke }: TokenRowProps) {
             )}
           </div>
 
-          {/* Token preview */}
           <div className="flex items-center gap-2 mb-3">
             <code className="mono text-xs text-gray-500 bg-gray-50 border border-gray-100 rounded-lg px-3 py-1.5 tracking-wider">
               {token.prefix}••••••••••••••••••••••••••••••••••••
             </code>
           </div>
 
-          {/* Meta */}
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-400 mono mb-3">
             <span>Created {token.created}</span>
             <span className="text-gray-200">·</span>
@@ -269,22 +278,20 @@ function TokenRow({ token, onRevoke }: TokenRowProps) {
             </span>
           </div>
 
-          {/* Scopes */}
           <div className="flex flex-wrap gap-1.5">
             {token.scopes.map((s) => (
-              <Pill key={s} variant="blue">
-                {s}
-              </Pill>
+              <Pill key={s} variant="blue">{s}</Pill>
             ))}
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex items-center gap-2 shrink-0">
           {token.active && !isExpired && (
             <button
               onClick={() => onRevoke(token.id)}
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-400 hover:border-red-200 hover:bg-red-50 hover:text-red-500 transition-all duration-200 mono"
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-gray-200
+              text-gray-400 hover:border-red-200 hover:bg-red-50 hover:text-red-500 transition-all
+              duration-200 mono cursor-pointer"
             >
               <Icon d={icons.trash} size={13} />
               Revoke
@@ -301,24 +308,30 @@ function TokenRow({ token, onRevoke }: TokenRowProps) {
 interface CreateTokenModalProps {
   show: boolean;
   onClose: () => void;
-  onCreate: (data: NewTokenData) => void;
+  onCreated: (token: Token) => void;
 }
 
-function CreateTokenModal({ show, onClose, onCreate }: CreateTokenModalProps) {
+function CreateTokenModal({ show, onClose, onCreated }: CreateTokenModalProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [name, setName] = useState("");
   const [selectedScopes, setSelectedScopes] = useState<string[]>([]);
   const [expiry, setExpiry] = useState<ExpiryOption>("90 days");
-  const [generatedToken, setGeneratedToken] = useState("");
+  const [rawToken, setRawToken] = useState("");
   const [showFull, setShowFull] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [failedCopy, setFailedCopy] = useState(false);
 
   const reset = () => {
     setStep(1);
     setName("");
     setSelectedScopes([]);
     setExpiry("90 days");
-    setGeneratedToken("");
+    setRawToken("");
     setShowFull(false);
+    setLoading(false);
+    setError(null);
+    setFailedCopy(false);
   };
 
   const handleClose = () => {
@@ -327,41 +340,46 @@ function CreateTokenModal({ show, onClose, onCreate }: CreateTokenModalProps) {
   };
 
   const handleCreate = async () => {
-    const token = await fetch("/api/tokens", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        name,
-        scopes: selectedScopes,
-        expires_in_days: expiryDays(expiry)
-      })
-    }).then(res => res.json());
-    setGeneratedToken(token);
-    setStep(2);
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/tokens", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          name,
+          scopes: selectedScopes,
+          expires_in_days: expiryDays(expiry),
+        }),
+      });
 
-    const days = expiryDays(expiry);
-    let expiryDate: string | null = null;
-    if (days !== null) {
-      const d = new Date();
-      d.setDate(d.getDate() + days);
-      expiryDate = d.toISOString().split("T")[0];
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setError(body.detail ?? "Failed to create token");
+        return;
+      }
+
+      const data: APIPATCreateResponse = await res.json();
+      setRawToken(data.raw_token);
+      setStep(2);
+      onCreated(mapAPIToken(data));
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    onCreate({
-      name,
-      prefix: token.slice(0, 8),
-      scopes: selectedScopes,
-      expiry: expiryDate,
-      created: new Date().toISOString().split("T")[0],
-      lastUsed: "Never",
-      active: true,
-    });
   };
 
   const toggleScope = (id: string) => {
-    setSelectedScopes((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]));
+    setSelectedScopes((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+    );
+  };
+
+  const handleCopyingFailed = () => {
+    setFailedCopy(true);
+    setShowFull(true);
   };
 
   const grouped = SCOPES.reduce<Record<string, Scope[]>>((acc, s) => {
@@ -378,13 +396,19 @@ function CreateTokenModal({ show, onClose, onCreate }: CreateTokenModalProps) {
               <h2 className="font-semibold text-gray-950 text-base">New access token</h2>
               <p className="text-xs text-gray-400 mt-0.5 mono">Tokens authenticate API requests on your behalf</p>
             </div>
-            <button onClick={handleClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+            <button onClick={handleClose} className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer">
               <Icon d={icons.close} size={18} />
             </button>
           </div>
 
           <div className="px-6 py-5 space-y-5 max-h-[60vh] overflow-y-auto">
-            {/* Name */}
+            {error && (
+              <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+                <Icon d={icons.alertCircle} size={14} stroke="#ef4444" />
+                <p className="text-xs text-red-600">{error}</p>
+              </div>
+            )}
+
             <div>
               <label className="block text-xs font-medium text-gray-700 mono mb-1.5 uppercase tracking-widest">
                 Token name
@@ -398,7 +422,6 @@ function CreateTokenModal({ show, onClose, onCreate }: CreateTokenModalProps) {
               />
             </div>
 
-            {/* Expiration */}
             <div>
               <label className="block text-xs font-medium text-gray-700 mono mb-1.5 uppercase tracking-widest">
                 Expiration
@@ -412,7 +435,7 @@ function CreateTokenModal({ show, onClose, onCreate }: CreateTokenModalProps) {
                       expiry === opt
                         ? "bg-gray-950 text-white border-gray-950"
                         : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
-                    }`}
+                    } cursor-pointer`}
                   >
                     {opt}
                   </button>
@@ -420,7 +443,6 @@ function CreateTokenModal({ show, onClose, onCreate }: CreateTokenModalProps) {
               </div>
             </div>
 
-            {/* Scopes */}
             <div>
               <label className="block text-xs font-medium text-gray-700 mono mb-2 uppercase tracking-widest">
                 Scopes
@@ -467,15 +489,20 @@ function CreateTokenModal({ show, onClose, onCreate }: CreateTokenModalProps) {
           </div>
 
           <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between gap-3">
-            <button onClick={handleClose} className="text-sm text-gray-400 hover:text-gray-600 transition-colors">
+            <button
+              onClick={handleClose}
+              className="text-sm text-gray-400 hover:text-gray-600
+              transition-colors cursor-pointer">
               Cancel
             </button>
             <button
               onClick={handleCreate}
-              disabled={!name.trim() || selectedScopes.length === 0}
-              className="flex items-center gap-2 bg-gray-950 text-white text-sm font-medium px-5 py-2.5 rounded-xl hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+              disabled={!name.trim() || selectedScopes.length === 0 || loading}
+              className="flex items-center gap-2 bg-gray-950 text-white text-sm font-medium px-5
+              py-2.5 rounded-xl hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed
+              transition-all cursor-pointer"
             >
-              Generate token →
+              {loading ? "Generating…" : "Generate token →"}
             </button>
           </div>
         </>
@@ -491,16 +518,13 @@ function CreateTokenModal({ show, onClose, onCreate }: CreateTokenModalProps) {
           </div>
 
           <div className="px-6 py-6 space-y-5">
-            {/* Warning */}
             <div className="flex gap-3 bg-amber-50 border border-amber-100 rounded-xl p-4">
               <Icon d={icons.warn} size={16} stroke="#d97706" className="shrink-0 mt-0.5" />
               <p className="text-xs text-amber-700 leading-relaxed">
-                <strong>Make sure to copy your token now.</strong> You won't be able to see it again after closing this
-                window.
+                <strong>Make sure to copy your token now.</strong> You won't be able to see it again after closing this window.
               </p>
             </div>
 
-            {/* Token display */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="text-xs font-medium text-gray-700 mono uppercase tracking-widest">
@@ -517,14 +541,18 @@ function CreateTokenModal({ show, onClose, onCreate }: CreateTokenModalProps) {
               <div className="flex items-center gap-2">
                 <div className="flex-1 bg-gray-950 rounded-xl px-4 py-3 border border-gray-800">
                   <code className="mono text-xs text-emerald-400 break-all tracking-wider">
-                    {showFull ? generatedToken : generatedToken.slice(0, 12) + "•".repeat(32)}
+                    {showFull ? rawToken : rawToken.slice(0, 12) + "•".repeat(32)}
                   </code>
                 </div>
-                <CopyButton value={generatedToken} />
+                <CopyButton value={rawToken} onFailed={handleCopyingFailed} />
               </div>
+              {failedCopy && (
+                <p className="text-xs text-red-500">
+                  Failed to copy. Please try copying manually.
+                </p>
+              )}
             </div>
 
-            {/* Summary */}
             <div className="bg-gray-50 rounded-xl p-4 space-y-2">
               <div className="flex justify-between text-xs">
                 <span className="text-gray-400 mono">Expiration</span>
@@ -540,7 +568,8 @@ function CreateTokenModal({ show, onClose, onCreate }: CreateTokenModalProps) {
           <div className="px-6 py-4 border-t border-gray-100">
             <button
               onClick={handleClose}
-              className="w-full bg-gray-950 text-white text-sm font-medium py-2.5 rounded-xl hover:bg-gray-800 transition-colors"
+              className="w-full bg-gray-950 text-white text-sm font-medium py-2.5 rounded-xl
+              hover:bg-gray-800 transition-colors cursor-pointer"
             >
               Done
             </button>
@@ -557,9 +586,10 @@ interface RevokeModalProps {
   show: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  loading: boolean;
 }
 
-function RevokeModal({ show, onClose, onConfirm }: RevokeModalProps) {
+function RevokeModal({ show, onClose, onConfirm, loading }: RevokeModalProps) {
   return (
     <Modal show={show} onClose={onClose}>
       <div className="p-6">
@@ -573,15 +603,21 @@ function RevokeModal({ show, onClose, onConfirm }: RevokeModalProps) {
         <div className="flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 border border-gray-200 text-gray-600 text-sm font-medium py-2.5 rounded-xl hover:bg-gray-50 transition-colors"
+            disabled={loading}
+            className="flex-1 border border-gray-200 text-gray-600 text-sm font-medium
+            py-2.5 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50
+            cursor-pointer disabled:cursor-not-allowed"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 bg-red-500 text-white text-sm font-medium py-2.5 rounded-xl hover:bg-red-600 transition-colors"
+            disabled={loading}
+            className="flex-1 bg-red-500 text-white text-sm font-medium py-2.5 rounded-xl
+            hover:bg-red-600 transition-colors disabled:opacity-50 cursor-pointer
+            disabled:cursor-not-allowed"
           >
-            Revoke token
+            {loading ? "Revoking…" : "Revoke token"}
           </button>
         </div>
       </div>
@@ -599,7 +635,6 @@ interface SidebarProps {
 function Sidebar({ active, setActive }: SidebarProps) {
   return (
     <aside className="w-56 shrink-0 border-r border-gray-100 flex flex-col bg-white">
-      {/* Logo */}
       <div className="px-5 py-5 border-b border-gray-100 flex items-center gap-2.5">
         <div className="w-7 h-7 bg-black rounded-lg flex items-center justify-center">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="white">
@@ -609,7 +644,6 @@ function Sidebar({ active, setActive }: SidebarProps) {
         <span className="font-semibold text-sm text-gray-950">Volta</span>
       </div>
 
-      {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5">
         {NAV.map((n) => (
           <button
@@ -625,7 +659,6 @@ function Sidebar({ active, setActive }: SidebarProps) {
         ))}
       </nav>
 
-      {/* User */}
       <div className="px-3 pb-4 pt-3 border-t border-gray-100">
         <div className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors">
           <div className="w-7 h-7 rounded-full bg-gray-900 text-white text-xs font-medium flex items-center justify-center mono shrink-0">
@@ -644,18 +677,55 @@ function Sidebar({ active, setActive }: SidebarProps) {
 // ── Tokens page ───────────────────────────────────────────────────────────────
 
 function TokensPage() {
-  const [tokens, setTokens] = useState<Token[]>(INITIAL_TOKENS);
+  const [tokens, setTokens] = useState<Token[]>([]);
+  const [loadingTokens, setLoadingTokens] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [revokeId, setRevokeId] = useState<number | null>(null);
+  const [revoking, setRevoking] = useState(false);
   const [filter, setFilter] = useState<FilterType>("all");
 
-  const handleCreate = (data: NewTokenData) => {
-    setTokens((prev) => [{ id: Date.now(), ...data }, ...prev]);
+  const fetchTokens = useCallback(async () => {
+    setLoadingTokens(true);
+    setFetchError(null);
+    try {
+      const res = await fetch("/api/tokens", { credentials: "include" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: APIPATResponse[] = await res.json();
+      setTokens(data.map(mapAPIToken));
+    } catch {
+      setFetchError("Failed to load tokens. Please try again.");
+    } finally {
+      setLoadingTokens(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchTokens(); }, [fetchTokens]);
+
+  const handleCreated = (token: Token) => {
+    // Prepend to list — already persisted server-side
+    setTokens((prev) => [token, ...prev]);
   };
 
-  const handleRevoke = (id: number) => {
-    setTokens((prev) => prev.map((t) => (t.id === id ? { ...t, active: false } : t)));
-    setRevokeId(null);
+  const handleRevoke = async () => {
+    if (revokeId === null) return;
+    setRevoking(true);
+    try {
+      const res = await fetch(`/api/tokens/${revokeId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setTokens((prev) =>
+        prev.map((t) => (t.id === revokeId ? { ...t, active: false } : t))
+      );
+      setRevokeId(null);
+    } catch {
+      // Keep modal open so user sees the failure — a toast would be better
+      // but stays minimal here
+    } finally {
+      setRevoking(false);
+    }
   };
 
   const filtered = tokens.filter((t) => {
@@ -665,31 +735,33 @@ function TokensPage() {
     return true;
   });
 
-  const activeCount = tokens.filter((t) => t.active && !(t.expiry && new Date(t.expiry) < new Date())).length;
+  const activeCount = tokens.filter(
+    (t) => t.active && !(t.expiry && new Date(t.expiry) < new Date())
+  ).length;
 
   const FILTERS: FilterType[] = ["all", "active", "expired"];
 
   return (
     <div className="max-w-3xl mx-auto py-10 px-8">
-      {/* Header */}
       <div className="flex items-start justify-between mb-8 gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-gray-950 mb-1">Access Tokens</h1>
           <p className="text-sm text-gray-400 font-light leading-relaxed max-w-md">
-            Personal access tokens function like passwords — use them to authenticate with the Volta API or SDK from your
-            scripts and applications.
+            Personal access tokens function like passwords — use them to authenticate with the
+            Volta API or SDK from your scripts and applications.
           </p>
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="shrink-0 flex items-center gap-2 bg-gray-950 text-white text-sm font-medium px-4 py-2.5 rounded-xl hover:bg-gray-800 transition-colors whitespace-nowrap"
+          className="shrink-0 flex items-center gap-2 bg-gray-950 text-white text-sm
+          font-medium px-4 py-2.5 rounded-xl hover:bg-gray-800 transition-colors whitespace-nowrap
+          cursor-pointer"
         >
           <Icon d={icons.plus} size={14} stroke="white" />
           New token
         </button>
       </div>
 
-      {/* Stats strip */}
       <div className="grid grid-cols-3 gap-3 mb-6">
         {(
           [
@@ -705,7 +777,6 @@ function TokensPage() {
         ))}
       </div>
 
-      {/* Security notice */}
       <div className="flex gap-3 bg-blue-50/60 border border-blue-100 rounded-xl p-4 mb-6">
         <Icon d={icons.shield} size={15} stroke="#3b82f6" className="shrink-0 mt-0.5" />
         <p className="text-xs text-blue-600 leading-relaxed">
@@ -714,7 +785,6 @@ function TokensPage() {
         </p>
       </div>
 
-      {/* Filter tabs */}
       <div className="flex items-center gap-1 mb-5 bg-gray-50 rounded-xl p-1 w-fit border border-gray-100">
         {FILTERS.map((f) => (
           <button
@@ -729,9 +799,34 @@ function TokensPage() {
         ))}
       </div>
 
-      {/* Token list */}
       <div className="space-y-3">
-        {filtered.length === 0 && (
+        {loadingTokens && (
+          <div className="flex items-center justify-center py-16 gap-3 text-gray-400">
+            <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            <span className="text-sm mono">Loading tokens…</span>
+          </div>
+        )}
+
+        {!loadingTokens && fetchError && (
+          <div className="flex items-center justify-between bg-red-50 border border-red-100 rounded-xl px-5 py-4">
+            <div className="flex items-center gap-2">
+              <Icon d={icons.alertCircle} size={15} stroke="#ef4444" />
+              <p className="text-sm text-red-600">{fetchError}</p>
+            </div>
+            <button
+              onClick={fetchTokens}
+              className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 mono"
+            >
+              <Icon d={icons.refresh} size={13} stroke="currentColor" />
+              Retry
+            </button>
+          </div>
+        )}
+
+        {!loadingTokens && !fetchError && filtered.length === 0 && (
           <div className="text-center py-16 text-gray-400">
             <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
               <Icon d={icons.tokens} size={20} stroke="#d1d5db" />
@@ -739,13 +834,25 @@ function TokensPage() {
             <p className="text-sm font-medium text-gray-300 mono">No tokens</p>
           </div>
         )}
-        {filtered.map((token) => (
-          <TokenRow key={token.id} token={token} onRevoke={(id) => setRevokeId(id)} />
-        ))}
+
+        {!loadingTokens &&
+          !fetchError &&
+          filtered.map((token) => (
+            <TokenRow key={token.id} token={token} onRevoke={(id) => setRevokeId(id)} />
+          ))}
       </div>
 
-      <CreateTokenModal show={showCreate} onClose={() => setShowCreate(false)} onCreate={handleCreate} />
-      <RevokeModal show={!!revokeId} onClose={() => setRevokeId(null)} onConfirm={() => revokeId !== null && handleRevoke(revokeId)} />
+      <CreateTokenModal
+        show={showCreate}
+        onClose={() => setShowCreate(false)}
+        onCreated={handleCreated}
+      />
+      <RevokeModal
+        show={!!revokeId}
+        onClose={() => setRevokeId(null)}
+        onConfirm={handleRevoke}
+        loading={revoking}
+      />
     </div>
   );
 }
@@ -829,7 +936,6 @@ export default function Dashboard() {
       <div className="flex h-screen bg-white overflow-hidden font-sans">
         <Sidebar active={active} setActive={setActive} />
 
-        {/* Top bar */}
         <div className="flex-1 flex flex-col min-w-0">
           <header className="flex items-center justify-between px-8 py-4 border-b border-gray-100 bg-white shrink-0">
             <div className="flex items-center gap-2 text-sm">
