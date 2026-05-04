@@ -147,9 +147,9 @@ async def list_pats(
             PersonalAccessToken.user_id == user.id,
             *conditions
         )
+        .order_by(PersonalAccessToken.created_at.desc())
         .offset((page - 1) * size)
         .limit(size)
-        .order_by(PersonalAccessToken.created_at.desc())
     )
     pats = result.scalars().all()
     return PATPage(
