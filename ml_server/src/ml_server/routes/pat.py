@@ -3,8 +3,8 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, Query
+from sqlalchemy import select, func, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.ml_server.dependencies.db import get_session
@@ -15,6 +15,8 @@ from src.ml_server.schemas.pat import (
     PATCreate,
     PATCreateResponse,
     PATResponse,
+    PATPage,
+    PATStatus,
     VALID_SCOPES,
 )
 from src.ml_server.services.pat import _hash_token
@@ -33,6 +35,25 @@ async def create_pat(
     user: Annotated[User, Depends(get_current_user)],
 ) -> PATCreateResponse:
     """Create a new PAT. Returns raw token once — store it securely."""
+    now = datetime.now(timezone.utc)
+    pat_count_result = await session.execute(
+        select(func.count())
+        .select_from(PersonalAccessToken)
+        .where(
+            PersonalAccessToken.user_id == user.id
+            and PersonalAccessToken.is_active
+            and (PersonalAccessToken.expires_at is None
+                 or PersonalAccessToken.expires_at > now)))
+    pat_count = pat_count_result.scalar_one()
+    if pat_count >= request.app.state.settings.pat_count_limit:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"PAT limit reached ({pat_count}/{request.app.state.settings.pat_count_limit}). "
+                "Please revoke old tokens before creating new ones.",
+            ),
+        )
+
     # Validate scopes
     invalid = set(body.scopes) - VALID_SCOPES
     if invalid:
@@ -87,21 +108,56 @@ async def create_pat(
     )
 
 
-@router.get("/api/tokens", status_code=200, response_model=list[PATResponse])
+@router.get("/api/tokens", status_code=200, response_model=PATPage)
 async def list_pats(
-    request: Request,
     session: Annotated[AsyncSession, Depends(get_session)],
     user: Annotated[User, Depends(get_current_user)],
-) -> list[PATResponse]:
+    status: PATStatus = Query(PATStatus.ALL, description="Filter tokens by status"),
+    page: int = Query(1, gt=0, description="Page number (starting from 1)"),
+    size: int = Query(20, gt=0, le=100, description="Number of tokens per page"),
+) -> PATPage:
     """List all PATs for current user (active and inactive)."""
+
+    now = datetime.now(timezone.utc)
+    conditions = []
+
+    if status == PATStatus.ALL:
+        conditions.append(True)
+    elif status == PATStatus.ACTIVE:
+        conditions.append(
+            and_(
+                PersonalAccessToken.is_active,
+                or_(
+                    PersonalAccessToken.expires_at is None,
+                    PersonalAccessToken.expires_at > now
+                )
+            )
+        )
+    elif status == PATStatus.EXPIRED:
+        conditions.append(
+            and_(
+                PersonalAccessToken.expires_at is not None,
+                PersonalAccessToken.expires_at <= now
+            )
+        )
 
     result = await session.execute(
         select(PersonalAccessToken)
-        .where(PersonalAccessToken.user_id == user.id)
+        .where(
+            PersonalAccessToken.user_id == user.id,
+            *conditions
+        )
+        .offset((page - 1) * size)
+        .limit(size)
         .order_by(PersonalAccessToken.created_at.desc())
     )
     pats = result.scalars().all()
-    return [PATResponse.from_model(p) for p in pats]
+    return PATPage(
+        items=[PATResponse.from_model(p) for p in pats],
+        total=len(pats),
+        page=page,
+        size=size,
+    )
 
 
 @router.delete("/api/tokens/{token_id}", status_code=200)

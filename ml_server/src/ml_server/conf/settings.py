@@ -26,3 +26,4 @@ class Settings:
         self.smtp_ssl_tls = os.getenv("SMTP_SSL_TLS", "false").lower() == "true"
         self.session_expire_hours = 24
         self.password_reset_expire_hours = 1
+        self.pat_count_limit = 50

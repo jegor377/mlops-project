@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, Field
+from enum import Enum
 
 
 VALID_SCOPES = {
@@ -18,6 +19,12 @@ class PATCreate(BaseModel):
         if invalid:
             raise ValueError(f"Invalid scopes: {invalid}")
         return list(set(self.scopes))  # deduplicate
+
+
+class PATStatus(str, Enum):
+    ALL = "all"
+    ACTIVE = "active"
+    EXPIRED = "expired"
 
 
 class PATResponse(BaseModel):
@@ -44,6 +51,13 @@ class PATResponse(BaseModel):
             last_used_at=pat.last_used_at,
             is_active=pat.is_active,
         )
+
+
+class PATPage(BaseModel):
+    items: list[PATResponse]
+    total: int
+    page: int
+    size: int
 
 
 class PATCreateResponse(PATResponse):
