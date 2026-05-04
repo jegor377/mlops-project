@@ -167,7 +167,7 @@ async def test_list_pats_returns_only_own_tokens(client, db_session):
     resp = await client.get(LIST_URL)
 
     assert resp.status_code == 200
-    names = [t["name"] for t in resp.json()]
+    names = [t["name"] for t in resp.json()["items"]]
     assert "Token A" in names
     assert "Token B" in names
     assert "Token C" not in names
@@ -181,7 +181,11 @@ async def test_list_pats_empty_for_new_user(client, db_session):
     resp = await client.get(LIST_URL)
 
     assert resp.status_code == 200
-    assert resp.json() == []
+    json_resp = resp.json()
+    assert json_resp["items"] == []
+    assert json_resp["total"] == 0
+    assert json_resp["page"] == 1
+    assert json_resp["size"] == 20
 
 
 async def test_list_pats_includes_inactive_tokens(client, db_session):
@@ -193,7 +197,8 @@ async def test_list_pats_includes_inactive_tokens(client, db_session):
     resp = await client.get(LIST_URL)
 
     assert resp.status_code == 200
-    assert any(not t["is_active"] for t in resp.json())
+    resp_json = resp.json()
+    assert any(not t["is_active"] for t in resp_json["items"])
 
 
 async def test_list_pats_unauthenticated_returns_401(client, db_session):
@@ -209,9 +214,78 @@ async def test_list_pats_no_raw_token_in_response(client, db_session):
 
     resp = await client.get(LIST_URL)
 
-    for pat in resp.json():
+    resp_json = resp.json()
+    for pat in resp_json["items"]:
         assert "raw_token" not in pat
         assert "token_hash" not in pat
+
+
+async def test_list_pats_pagination(client, db_session):
+    user = await make_user(db_session)
+    us = await make_session(db_session, user)
+
+    # Create 25 tokens
+    for i in range(25):
+        await make_pat(db_session, user, name=f"Token {i+1}")
+
+    client.cookies.set("session", us.token)
+
+    # Request page 3 with size 10
+    resp = await client.get("/api/tokens?page=3&size=10")
+
+    assert resp.status_code == 200
+    resp_json = resp.json()
+    assert resp_json["page"] == 3
+    assert resp_json["size"] == 10
+    assert len(resp_json["items"]) == 5  # only 5 items on page 3
+    assert resp_json["total"] == 5  # total is number of items in this page, not total across all pages
+
+
+async def test_list_pats_invalid_page_size_returns_422(client, db_session):
+    user = await make_user(db_session)
+    us = await make_session(db_session, user)
+    client.cookies.set("session", us.token)
+
+    resp = await client.get("/api/tokens?page=1&size=0")
+    assert resp.status_code == 422
+
+    resp = await client.get("/api/tokens?page=1&size=101")
+    assert resp.status_code == 422
+
+
+async def test_list_pats_status_filter(client, db_session):
+    user = await make_user(db_session)
+    us = await make_session(db_session, user)
+
+    await make_pat(db_session, user, name="Active Token")
+    await make_pat(db_session, user, name="Expired Token", expired=True)
+    await make_pat(db_session, user, name="Revoked Token", is_active=False)
+
+    client.cookies.set("session", us.token)
+
+    # Test ACTIVE filter
+    resp = await client.get("/api/tokens?status=active")
+    assert resp.status_code == 200
+    names = [t["name"] for t in resp.json()["items"]]
+    assert "Active Token" in names
+    assert "Expired Token" not in names
+    assert "Revoked Token" not in names
+
+    # Test EXPIRED filter
+    resp = await client.get("/api/tokens?status=expired")
+    assert resp.status_code == 200
+    names = [t["name"] for t in resp.json()["items"]]
+    assert "Expired Token" in names
+    assert "Active Token" not in names
+    assert "Revoked Token" not in names
+
+    # Test ALL filter
+    resp = await client.get("/api/tokens?status=all")
+    assert resp.status_code == 200
+    names = [t["name"] for t in resp.json()["items"]]
+    assert "Active Token" in names
+    assert "Expired Token" in names
+    assert "Revoked Token" in names
 
 
 # ── DELETE /api/tokens/{id} ───────────────────────────────────────────────────
