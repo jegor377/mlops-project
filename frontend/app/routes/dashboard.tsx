@@ -874,7 +874,7 @@ function TokensPage() {
             </div>
             <button
               onClick={() => fetchTokens(true, filter)}
-              className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 mono"
+              className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 mono cursor-pointer"
             >
               <Icon d={icons.refresh} size={13} stroke="currentColor" />
               Retry
