@@ -1,48 +1,17 @@
-import bcrypt
 from datetime import datetime, timedelta, timezone
-
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.ml_server.models.user import User
 from src.ml_server.models.user_session import UserSession
+from src.tests.conftest import make_user, make_session, LOGIN_PAYLOAD
 
 
 LOGOUT_URL = "/auth/logout"
 LOGIN_URL = "/auth/login"
-LOGIN_PAYLOAD = {"email": "igor@example.com", "password": "StrongPass1!"}
-
-
-async def _create_active_user(session: AsyncSession) -> User:
-    password_hash = bcrypt.hashpw(
-        LOGIN_PAYLOAD["password"].encode("utf-8"), bcrypt.gensalt()
-    )
-    user = User(
-        email=LOGIN_PAYLOAD["email"],
-        password_hash=password_hash.decode("utf-8"),
-        is_active=True,
-    )
-    session.add(user)
-    await session.commit()
-    await session.refresh(user)
-    return user
-
-
-async def _create_session(session: AsyncSession, user: User) -> UserSession:
-    user_session = UserSession(
-        user_id=user.id,
-        token="test-session-token-abc123",
-        expires_at=datetime.now(timezone.utc) + timedelta(hours=24),
-    )
-    session.add(user_session)
-    await session.commit()
-    await session.refresh(user_session)
-    return user_session
 
 
 async def test_logout_returns_200(client, db_session):
-    user = await _create_active_user(db_session)
-    user_session = await _create_session(db_session, user)
+    user = await make_user(db_session)
+    user_session = await make_session(db_session, user)
     client.cookies.set("session", user_session.token)
 
     response = await client.post(LOGOUT_URL)
@@ -51,8 +20,8 @@ async def test_logout_returns_200(client, db_session):
 
 
 async def test_logout_deletes_session_from_db(client, db_session):
-    user = await _create_active_user(db_session)
-    user_session = await _create_session(db_session, user)
+    user = await make_user(db_session)
+    user_session = await make_session(db_session, user)
     client.cookies.set("session", user_session.token)
 
     await client.post(LOGOUT_URL)
@@ -64,8 +33,8 @@ async def test_logout_deletes_session_from_db(client, db_session):
 
 
 async def test_logout_clears_session_cookie(client, db_session):
-    user = await _create_active_user(db_session)
-    user_session = await _create_session(db_session, user)
+    user = await make_user(db_session)
+    user_session = await make_session(db_session, user)
     client.cookies.set("session", user_session.token)
 
     response = await client.post(LOGOUT_URL)
@@ -92,8 +61,8 @@ async def test_logout_with_invalid_token_returns_200(client, db_session):
 
 async def test_logout_does_not_delete_other_user_sessions(client, db_session):
     """Only the presented token's session is removed."""
-    user = await _create_active_user(db_session)
-    target_session = await _create_session(db_session, user)
+    user = await make_user(db_session)
+    target_session = await make_session(db_session, user)
 
     other_session = UserSession(
         user_id=user.id,
@@ -115,7 +84,7 @@ async def test_logout_does_not_delete_other_user_sessions(client, db_session):
 
 async def test_login_then_logout_full_flow(client, db_session):
     """Login creates session, logout destroys it."""
-    await _create_active_user(db_session)
+    await make_user(db_session)
 
     login_response = await client.post(LOGIN_URL, json=LOGIN_PAYLOAD)
     assert login_response.status_code == 200
