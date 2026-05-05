@@ -139,10 +139,7 @@ async def list_pats(
     elif status == PATStatus.INACTIVE:
         conditions.append(
             or_(
-                and_(
-                    PersonalAccessToken.is_active == False,  # noqa: E712
-                    PersonalAccessToken.revoked_at != None  # noqa: E711
-                ),
+                PersonalAccessToken.is_active == False,  # noqa: E712
                 and_(
                     PersonalAccessToken.expires_at != None,  # noqa: E711
                     PersonalAccessToken.expires_at <= now
