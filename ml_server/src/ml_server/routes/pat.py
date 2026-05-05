@@ -17,6 +17,7 @@ from src.ml_server.schemas.pat import (
     PATResponse,
     PATPage,
     PATStatus,
+    PATStatsResponse,
     VALID_SCOPES,
 )
 from src.ml_server.services.pat import _hash_token
@@ -82,6 +83,7 @@ async def create_pat(
         scopes=",".join(sorted(set(body.scopes))),
         expires_at=expires_at,
         created_at=now,
+        revoked_at=None,
         last_used_at=None,
         is_active=True,
     )
@@ -102,6 +104,7 @@ async def create_pat(
         scopes=pat.scopes.split(","),
         expires_at=pat.expires_at,
         created_at=pat.created_at,
+        revoked_at=pat.revoked_at,
         last_used_at=pat.last_used_at,
         is_active=pat.is_active,
         raw_token=raw_token,
@@ -128,16 +131,22 @@ async def list_pats(
             and_(
                 PersonalAccessToken.is_active,
                 or_(
-                    PersonalAccessToken.expires_at is None,
+                    PersonalAccessToken.expires_at == None,
                     PersonalAccessToken.expires_at > now
                 )
             )
         )
-    elif status == PATStatus.EXPIRED:
+    elif status == PATStatus.INACTIVE:
         conditions.append(
-            and_(
-                PersonalAccessToken.expires_at is not None,
-                PersonalAccessToken.expires_at <= now
+            or_(
+                and_(
+                    PersonalAccessToken.is_active == False, # noqa: E712
+                    PersonalAccessToken.revoked_at != None
+                ),
+                and_(
+                    PersonalAccessToken.expires_at != None,
+                    PersonalAccessToken.expires_at <= now
+                )
             )
         )
 
@@ -157,6 +166,36 @@ async def list_pats(
         total=len(pats),
         page=page,
         size=size,
+    )
+
+
+@router.get("/api/tokens/stats", status_code=200, response_model=PATStatsResponse)
+async def get_pat_stats(
+    session: Annotated[AsyncSession, Depends(get_session)],
+    user: Annotated[User, Depends(get_current_user)],
+) -> PATStatsResponse:
+    """Get statistics about PATs for current user."""
+
+    now = datetime.now(timezone.utc)
+    total_count = await session.execute(select(func.count()).where(
+        PersonalAccessToken.user_id == user.id
+    ))
+    total_count = total_count.scalar_one()
+    active_count = await session.execute(select(func.count()).where(
+        PersonalAccessToken.user_id == user.id,
+        PersonalAccessToken.is_active,
+        or_(
+            PersonalAccessToken.expires_at is None,
+            PersonalAccessToken.expires_at > now
+        )
+    ))
+    active_count = active_count.scalar_one()
+    inactive_count = total_count - active_count
+
+    return PATStatsResponse(
+        total=total_count,
+        active=active_count,
+        inactive=inactive_count,
     )
 
 
@@ -183,6 +222,7 @@ async def revoke_pat(
         raise HTTPException(status_code=409, detail="Token already revoked")
 
     pat.is_active = False
+    pat.revoked_at = datetime.now(timezone.utc)
 
     try:
         await session.commit()

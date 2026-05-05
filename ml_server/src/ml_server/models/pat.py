@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional
-from sqlalchemy import ForeignKey, String, DateTime, Text
+from sqlalchemy import ForeignKey, String, DateTime, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 from src.ml_server.models.base import Base
 
@@ -23,9 +23,17 @@ class PersonalAccessToken(Base):
         DateTime(timezone=True), nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+    )
+    revoked_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
     )
     last_used_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    is_active: Mapped[bool] = mapped_column(nullable=False, default=True)
+    is_active: Mapped[bool] = mapped_column(
+        nullable=False,
+        server_default="true",
+    )

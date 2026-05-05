@@ -24,7 +24,7 @@ class PATCreate(BaseModel):
 class PATStatus(str, Enum):
     ALL = "all"
     ACTIVE = "active"
-    EXPIRED = "expired"
+    INACTIVE = "inactive"
 
 
 class PATResponse(BaseModel):
@@ -34,6 +34,7 @@ class PATResponse(BaseModel):
     scopes: list[str]
     expires_at: Optional[datetime]
     created_at: datetime
+    revoked_at: Optional[datetime]
     last_used_at: Optional[datetime]
     is_active: bool
 
@@ -48,6 +49,7 @@ class PATResponse(BaseModel):
             scopes=pat.scopes.split(",") if pat.scopes else [],
             expires_at=pat.expires_at,
             created_at=pat.created_at,
+            revoked_at=pat.revoked_at,
             last_used_at=pat.last_used_at,
             is_active=pat.is_active,
         )
@@ -63,3 +65,9 @@ class PATPage(BaseModel):
 class PATCreateResponse(PATResponse):
     """Returned only at creation time — includes raw token."""
     raw_token: str
+
+
+class PATStatsResponse(BaseModel):
+    total: int
+    active: int
+    inactive: int
