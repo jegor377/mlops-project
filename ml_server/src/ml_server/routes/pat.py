@@ -21,6 +21,7 @@ from src.ml_server.schemas.pat import (
     VALID_SCOPES,
 )
 from src.ml_server.services.pat import _hash_token
+from src.ml_server.services.email import send_pat_creation_email, send_pat_revocation_email
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -101,6 +102,13 @@ async def create_pat(
         await session.rollback()
         logger.error(f"Failed to create PAT for user {user.id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
+
+    await send_pat_creation_email(
+        user.email,
+        pat.name,
+        pat.expires_at,
+        request.app.state.settings
+    )
 
     return PATCreateResponse(
         id=pat.id,
@@ -233,4 +241,5 @@ async def revoke_pat(
         logger.error(f"Failed to revoke PAT {token_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
+    await send_pat_revocation_email(user.email, pat.name, request.app.state.settings)
     return Response(status_code=200)

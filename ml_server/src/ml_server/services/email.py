@@ -1,5 +1,6 @@
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
 from pydantic import EmailStr
+from datetime import datetime
 
 from src.ml_server.conf.settings import Settings
 
@@ -46,6 +47,38 @@ async def send_password_reset_email(
             f'<p><a href="{reset_url}">Reset password</a></p>'
             f"<p>This link expires in {settings.password_reset_expire_hours} hour(s).</p>"
             f"<p>If you didn't request this, you can safely ignore this email.</p>"
+        ),
+        subtype=MessageType.html,
+    )
+    await _make_mailer(settings).send_message(message)
+
+
+async def send_pat_creation_email(
+    recipient: EmailStr, pat_name: str, expires_at: datetime, settings: Settings
+) -> None:
+    message = MessageSchema(
+        subject="Your new Personal Access Token",
+        recipients=[recipient],
+        body=(
+            f"<p>A new Personal Access Token (PAT) has been created for your account.</p>"
+            f"<p><strong>Name:</strong> {pat_name}</p>"
+            f"<p><strong>Expiration:</strong> {expires_at}</p>"
+            f"<p>If you didn't create this token, please revoke it immediately from your account settings.</p>"
+        ),
+        subtype=MessageType.html,
+    )
+    await _make_mailer(settings).send_message(message)
+
+
+async def send_pat_revocation_email(
+    recipient: EmailStr, pat_name: str, settings: Settings
+) -> None:
+    message = MessageSchema(
+        subject="Personal Access Token Revoked",
+        recipients=[recipient],
+        body=(
+            f"<p>Your Personal Access Token (PAT) named '{pat_name}' has been revoked.</p>"
+            f"<p>If you didn't revoke this token, please check your account security settings immediately.</p>"
         ),
         subtype=MessageType.html,
     )
