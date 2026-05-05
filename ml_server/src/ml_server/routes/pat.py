@@ -131,7 +131,7 @@ async def list_pats(
             and_(
                 PersonalAccessToken.is_active,
                 or_(
-                    PersonalAccessToken.expires_at == None,
+                    PersonalAccessToken.expires_at == None,  # noqa: E711
                     PersonalAccessToken.expires_at > now
                 )
             )
@@ -140,11 +140,11 @@ async def list_pats(
         conditions.append(
             or_(
                 and_(
-                    PersonalAccessToken.is_active == False, # noqa: E712
-                    PersonalAccessToken.revoked_at != None
+                    PersonalAccessToken.is_active == False,  # noqa: E712
+                    PersonalAccessToken.revoked_at != None  # noqa: E711
                 ),
                 and_(
-                    PersonalAccessToken.expires_at != None,
+                    PersonalAccessToken.expires_at != None,  # noqa: E711
                     PersonalAccessToken.expires_at <= now
                 )
             )
