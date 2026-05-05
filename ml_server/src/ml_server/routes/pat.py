@@ -37,14 +37,19 @@ async def create_pat(
 ) -> PATCreateResponse:
     """Create a new PAT. Returns raw token once — store it securely."""
     now = datetime.now(timezone.utc)
+    count_condition = and_(
+        PersonalAccessToken.user_id == user.id,
+        PersonalAccessToken.is_active == True,  # noqa: E712
+        or_(
+            PersonalAccessToken.expires_at == None,  # noqa: E711
+            PersonalAccessToken.expires_at > now
+        )
+    )
     pat_count_result = await session.execute(
         select(func.count())
         .select_from(PersonalAccessToken)
-        .where(
-            PersonalAccessToken.user_id == user.id
-            and PersonalAccessToken.is_active
-            and (PersonalAccessToken.expires_at is None
-                 or PersonalAccessToken.expires_at > now)))
+        .where(count_condition)
+    )
     pat_count = pat_count_result.scalar_one()
     if pat_count >= request.app.state.settings.pat_count_limit:
         raise HTTPException(
