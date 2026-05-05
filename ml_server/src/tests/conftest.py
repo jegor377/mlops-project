@@ -100,6 +100,7 @@ async def make_pat(
     scopes: list[str] | None = None,
     expired: bool = False,
     is_active: bool = True,
+    is_revoked: bool = False,
 ) -> tuple[PersonalAccessToken, str]:
     raw_token = "vlt_testtoken" + secrets.token_urlsafe(32)
     token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
@@ -112,6 +113,8 @@ async def make_pat(
         scopes=",".join(scopes or ["inference:basic"]),
         expires_at=datetime.now(timezone.utc) + offset,
         created_at=datetime.now(timezone.utc),
+        revoked_at=None if not is_revoked else datetime.now(timezone.utc),
+        last_used_at=None,
         is_active=is_active,
     )
     session.add(pat)

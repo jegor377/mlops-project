@@ -191,7 +191,7 @@ async def test_list_pats_empty_for_new_user(client, db_session):
 async def test_list_pats_includes_inactive_tokens(client, db_session):
     user = await make_user(db_session)
     us = await make_session(db_session, user)
-    await make_pat(db_session, user, name="Revoked", is_active=False)
+    await make_pat(db_session, user, name="Revoked", is_active=False, is_revoked=True)
     client.cookies.set("session", us.token)
 
     resp = await client.get(LIST_URL)
@@ -259,7 +259,7 @@ async def test_list_pats_status_filter(client, db_session):
 
     await make_pat(db_session, user, name="Active Token")
     await make_pat(db_session, user, name="Expired Token", expired=True)
-    await make_pat(db_session, user, name="Revoked Token", is_active=False)
+    await make_pat(db_session, user, name="Revoked Token", is_active=False, is_revoked=True)
 
     client.cookies.set("session", us.token)
 
@@ -271,13 +271,13 @@ async def test_list_pats_status_filter(client, db_session):
     assert "Expired Token" not in names
     assert "Revoked Token" not in names
 
-    # Test EXPIRED filter
-    resp = await client.get("/api/tokens?status=expired")
+    # Test INACTIVE filter
+    resp = await client.get("/api/tokens?status=inactive")
     assert resp.status_code == 200
     names = [t["name"] for t in resp.json()["items"]]
-    assert "Expired Token" in names
     assert "Active Token" not in names
-    assert "Revoked Token" not in names
+    assert "Expired Token" in names
+    assert "Revoked Token" in names
 
     # Test ALL filter
     resp = await client.get("/api/tokens?status=all")
@@ -286,6 +286,28 @@ async def test_list_pats_status_filter(client, db_session):
     assert "Active Token" in names
     assert "Expired Token" in names
     assert "Revoked Token" in names
+
+
+# ── GET /api/tokens/stats ───────────────────────────────────────────────────
+
+
+async def test_stats_endpoint_returns_correct_counts(client, db_session):
+    user = await make_user(db_session)
+    us = await make_session(db_session, user)
+
+    # Create tokens with different statuses
+    await make_pat(db_session, user, name="Active Token")
+    await make_pat(db_session, user, name="Expired Token", expired=True)
+    await make_pat(db_session, user, name="Revoked Token", is_active=False, is_revoked=True)
+
+    client.cookies.set("session", us.token)
+
+    resp = await client.get("/api/tokens/stats")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["total"] == 3
+    assert data["active"] == 1
+    assert data["inactive"] == 2
 
 
 # ── DELETE /api/tokens/{id} ───────────────────────────────────────────────────
