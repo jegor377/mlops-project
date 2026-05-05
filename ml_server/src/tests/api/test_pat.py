@@ -42,7 +42,7 @@ async def test_create_pat_returns_201_and_raw_token(client, db_session):
     assert set(data["scopes"]) == set(VALID_BODY["scopes"])
     assert data["is_active"] is True
     assert "token_hash" not in data  # never expose hash
-    mock_send.assert_awaited_once_with(user.email, data["name"], ANY, ANY)
+    mock_send.assert_awaited_once_with(user.email, data["name"], ANY, ANY, ANY)
 
 
 async def test_create_pat_raw_token_not_stored_plaintext(client, db_session):
@@ -62,7 +62,7 @@ async def test_create_pat_raw_token_not_stored_plaintext(client, db_session):
     assert pat.token_hash != raw
     assert pat.token_hash == hashlib.sha256(raw.encode()).hexdigest()
     data = resp.json()
-    mock_send.assert_awaited_once_with(user.email, data["name"], ANY, ANY)
+    mock_send.assert_awaited_once_with(user.email, data["name"], ANY, ANY, ANY)
 
 
 async def test_create_pat_persists_in_db(client, db_session):
@@ -84,7 +84,7 @@ async def test_create_pat_persists_in_db(client, db_session):
     assert pat.name == "CI Pipeline"
     assert pat.is_active is True
     data = resp.json()
-    mock_send.assert_awaited_once_with(user.email, data["name"], ANY, ANY)
+    mock_send.assert_awaited_once_with(user.email, data["name"], ANY, ANY, ANY)
 
 
 async def test_create_pat_with_no_expiry(client, db_session):
@@ -102,7 +102,7 @@ async def test_create_pat_with_no_expiry(client, db_session):
     assert resp.status_code == 201
     assert resp.json()["expires_at"] is None
     data = resp.json()
-    mock_send.assert_awaited_once_with(user.email, data["name"], ANY, ANY)
+    mock_send.assert_awaited_once_with(user.email, data["name"], ANY, ANY, ANY)
 
 
 async def test_create_pat_invalid_scope_returns_422(client, db_session):
@@ -190,7 +190,7 @@ async def test_create_pat_prefix_is_correct_length(client, db_session):
     data = resp.json()
 
     assert data["token_prefix"] == data["raw_token"][:8]
-    mock_send.assert_awaited_once_with(user.email, data["name"], ANY, ANY)
+    mock_send.assert_awaited_once_with(user.email, data["name"], ANY, ANY, ANY)
 
 
 async def test_create_pat_scopes_deduplicated(client, db_session):
@@ -208,7 +208,7 @@ async def test_create_pat_scopes_deduplicated(client, db_session):
     assert resp.status_code == 201
     assert resp.json()["scopes"].count("inference:basic") == 1
     data = resp.json()
-    mock_send.assert_awaited_once_with(user.email, data["name"], ANY, ANY)
+    mock_send.assert_awaited_once_with(user.email, data["name"], ANY, ANY, ANY)
 
 
 async def test_create_pat_exceeding_limit_returns_400(client, db_session, app):
