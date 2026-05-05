@@ -106,6 +106,8 @@ async def create_pat(
     await send_pat_creation_email(
         user.email,
         pat.name,
+        pat.scopes.split(","),
+        body.expires_in_days,
         pat.expires_at,
         request.app.state.settings
     )

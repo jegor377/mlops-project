@@ -54,7 +54,12 @@ async def send_password_reset_email(
 
 
 async def send_pat_creation_email(
-    recipient: EmailStr, pat_name: str, expires_at: datetime, settings: Settings
+    recipient: EmailStr,
+    pat_name: str,
+    scopes: list[str],
+    expires_in_days: int | None,
+    expires_at: datetime,
+    settings: Settings
 ) -> None:
     message = MessageSchema(
         subject="Your new Personal Access Token",
@@ -62,7 +67,9 @@ async def send_pat_creation_email(
         body=(
             f"<p>A new Personal Access Token (PAT) has been created for your account.</p>"
             f"<p><strong>Name:</strong> {pat_name}</p>"
-            f"<p><strong>Expiration:</strong> {expires_at}</p>"
+            f"<p><strong>Expires in:</strong> {expires_in_days if expires_in_days is not None else 'Never'} days</p>"
+            f"<p><strong>Scopes:</strong> {', '.join(scopes)}</p>"
+            f"<p><strong>Expiration date:</strong> {expires_at if expires_at else 'Never'}</p>"
             f"<p>If you didn't create this token, please revoke it immediately from your account settings.</p>"
         ),
         subtype=MessageType.html,
