@@ -151,6 +151,21 @@ async def test_create_pat_scopes_deduplicated(client, db_session):
     assert resp.json()["scopes"].count("inference:basic") == 1
 
 
+async def test_create_pat_exceeding_limit_returns_400(client, db_session, app):
+    user = await make_user(db_session)
+    us = await make_session(db_session, user)
+    client.cookies.set("session", us.token)
+    # Create max allowed tokens
+    for i in range(app.state.settings.pat_count_limit):
+        await make_pat(db_session, user, name=f"Token {i+1}")
+
+    # Now attempt to create one more, which should fail
+    resp = await client.post(CREATE_URL, json=VALID_BODY)
+
+    assert resp.status_code == 400
+    assert "PAT limit reached" in resp.json()["detail"]
+
+
 # ── GET /api/tokens ───────────────────────────────────────────────────────────
 
 
