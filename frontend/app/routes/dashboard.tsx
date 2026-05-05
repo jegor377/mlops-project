@@ -4,7 +4,7 @@ import type { ReactNode, SVGProps } from "react";
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type PillVariant = "default" | "green" | "red" | "blue" | "yellow";
-type FilterType = "all" | "active" | "expired";
+type FilterType = "all" | "active" | "inactive";
 type NavId = "overview" | "events" | "funnels" | "users" | "tokens" | "settings";
 type ExpiryOption = "7 days" | "30 days" | "90 days" | "1 year" | "No expiration";
 
@@ -15,6 +15,7 @@ interface Token {
   scopes: string[];
   expiry: string | null;
   created: string;
+  revokedAt?: string | null;
   lastUsed: string | null;
   active: boolean;
 }
@@ -26,8 +27,22 @@ interface APIPATResponse {
   scopes: string[];
   expires_at: string | null;
   created_at: string;
+  revoked_at: string | null;
   last_used_at: string | null;
   is_active: boolean;
+}
+
+interface APIPATPage {
+  items: APIPATResponse[];
+  total: number;
+  page: number;
+  size: number;
+}
+
+interface APIPATStatsResponse {
+  total: number;
+  active: number;
+  inactive: number;
 }
 
 interface APIPATCreateResponse extends APIPATResponse {
@@ -44,6 +59,11 @@ interface NavItem {
   id: NavId;
   label: string;
   icon: keyof typeof icons;
+}
+
+interface FilterTypeItem {
+  id: FilterType;
+  label: string;
 }
 
 // ── Icons ────────────────────────────────────────────────────────────────────
@@ -131,6 +151,7 @@ function mapAPIToken(t: APIPATResponse): Token {
     created: formatDate(t.created_at),
     lastUsed: formatRelative(t.last_used_at),
     active: t.is_active,
+    revokedAt: t.revoked_at ? formatDate(t.revoked_at) : null,
   };
 }
 
@@ -271,6 +292,10 @@ function TokenRow({ token, onRevoke }: TokenRowProps) {
             <span className={isExpired ? "text-red-400" : ""}>
               {token.expiry ? `Expires ${token.expiry}` : "No expiration"}
             </span>
+            <span className="text-gray-200">·</span>
+            { token.revokedAt && (
+              <span className="text-red-400">Revoked at: {token.revokedAt}</span>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-1.5">
@@ -679,27 +704,64 @@ function TokensPage() {
   const [revokeId, setRevokeId] = useState<number | null>(null);
   const [revoking, setRevoking] = useState(false);
   const [filter, setFilter] = useState<FilterType>("all");
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
+  const [activeCount, setActiveCount] = useState(0);
+  const [inactiveCount, setInactiveCount] = useState(0);
+  const SIZE = 10;
 
-  const fetchTokens = useCallback(async () => {
+  const fetchCounts = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/tokens/stats`, { credentials: "include" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: APIPATStatsResponse = await res.json();
+      setTotalCount(data.total);
+      setActiveCount(data.active);
+      setInactiveCount(data.inactive);
+    } catch {
+      // Ignore count fetch errors — main list will still load
+    }
+  }, []);
+
+  const fetchTokens = useCallback(async (reset = false, nextFilter = filter) => {
     setLoadingTokens(true);
     setFetchError(null);
+
+    const targetPage = reset ? 1 : page;
+
     try {
-      const res = await fetch("/api/tokens", { credentials: "include" });
+      const res = await fetch(
+        `/api/tokens?status=${nextFilter}&page=${targetPage}&size=${SIZE}`,
+        { credentials: "include" }
+      );
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: APIPATResponse[] = await res.json();
-      setTokens(data.map(mapAPIToken));
+      const data: APIPATPage = await res.json();
+      const mapped = data.items.map(mapAPIToken);
+      setTokens((prev) =>
+        reset ? mapped : [...prev, ...mapped]
+      );
+      setHasMore(data.items.length === SIZE);
+      setPage(targetPage + 1);
     } catch {
       setFetchError("Failed to load tokens. Please try again.");
     } finally {
       setLoadingTokens(false);
     }
-  }, []);
+  }, [page, filter]);
 
-  useEffect(() => { fetchTokens(); }, [fetchTokens]);
+  useEffect(() => {
+    fetchCounts();
+  }, [fetchCounts]);
+
+  useEffect(() => {
+    fetchTokens(true, filter);
+  }, [filter]);
 
   const handleCreated = (token: Token) => {
     // Prepend to list — already persisted server-side
     setTokens((prev) => [token, ...prev]);
+    fetchCounts();
   };
 
   const handleRevoke = async () => {
@@ -715,6 +777,7 @@ function TokensPage() {
         prev.map((t) => (t.id === revokeId ? { ...t, active: false } : t))
       );
       setRevokeId(null);
+      fetchCounts();
     } catch {
       // Keep modal open so user sees the failure — a toast would be better
       // but stays minimal here
@@ -723,18 +786,11 @@ function TokensPage() {
     }
   };
 
-  const filtered = tokens.filter((t) => {
-    const isExpired = !!t.expiry && new Date(t.expiry) < new Date();
-    if (filter === "active") return t.active && !isExpired;
-    if (filter === "expired") return !t.active || isExpired;
-    return true;
-  });
-
-  const activeCount = tokens.filter(
-    (t) => t.active && !(t.expiry && new Date(t.expiry) < new Date())
-  ).length;
-
-  const FILTERS: FilterType[] = ["all", "active", "expired"];
+  const FILTERS: FilterTypeItem[] = [
+    { id: "all", label: "All" },
+    { id: "active", label: "Active" },
+    { id: "inactive", label: "Inactive" }
+  ];
 
   return (
     <div className="max-w-3xl mx-auto py-10 px-8">
@@ -760,9 +816,9 @@ function TokensPage() {
       <div className="grid grid-cols-3 gap-3 mb-6">
         {(
           [
-            { label: "Total tokens", value: tokens.length },
+            { label: "Total tokens", value: totalCount },
             { label: "Active", value: activeCount },
-            { label: "Revoked / Expired", value: tokens.length - activeCount },
+            { label: "Inactive", value: inactiveCount },
           ] as const
         ).map(({ label, value }) => (
           <div key={label} className="border border-gray-100 rounded-xl p-4 bg-white">
@@ -783,13 +839,18 @@ function TokensPage() {
       <div className="flex items-center gap-1 mb-5 bg-gray-50 rounded-xl p-1 w-fit border border-gray-100">
         {FILTERS.map((f) => (
           <button
-            key={f}
-            onClick={() => setFilter(f)}
+            key={f.id}
+            onClick={() => {
+              setFilter(f.id);
+              setPage(1);
+              setTokens([]);
+              fetchTokens(true, f.id);
+            }}
             className={`text-xs px-3 py-1.5 rounded-lg mono capitalize transition-all duration-150 ${
-              filter === f ? "bg-white text-gray-900 shadow-sm font-medium border border-gray-200" : "text-gray-400 hover:text-gray-600"
-            }`}
+              filter === f.id ? "bg-white text-gray-900 shadow-sm font-medium border border-gray-200" : "text-gray-400 hover:text-gray-600"
+            } cursor-pointer`}
           >
-            {f}
+            {f.label}
           </button>
         ))}
       </div>
@@ -812,7 +873,7 @@ function TokensPage() {
               <p className="text-sm text-red-600">{fetchError}</p>
             </div>
             <button
-              onClick={fetchTokens}
+              onClick={() => fetchTokens(true, filter)}
               className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 mono"
             >
               <Icon d={icons.refresh} size={13} stroke="currentColor" />
@@ -821,7 +882,7 @@ function TokensPage() {
           </div>
         )}
 
-        {!loadingTokens && !fetchError && filtered.length === 0 && (
+        {!loadingTokens && !fetchError && tokens.length === 0 && (
           <div className="text-center py-16 text-gray-400">
             <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
               <Icon d={icons.tokens} size={20} stroke="#d1d5db" />
@@ -832,10 +893,18 @@ function TokensPage() {
 
         {!loadingTokens &&
           !fetchError &&
-          filtered.map((token) => (
+          tokens.map((token) => (
             <TokenRow key={token.id} token={token} onRevoke={(id) => setRevokeId(id)} />
           ))}
       </div>
+      {hasMore && !loadingTokens && (
+        <button
+          onClick={() => fetchTokens(false)}
+          className="w-full mt-4 text-sm text-gray-500 hover:text-gray-700 cursor-pointer transition-colors mono flex items-center justify-center gap-1.5"
+        >
+          Load more
+        </button>
+      )}
 
       <CreateTokenModal
         show={showCreate}
