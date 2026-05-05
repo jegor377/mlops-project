@@ -51,7 +51,7 @@ async def create_pat(
             status_code=400,
             detail=(
                 f"PAT limit reached ({pat_count}/{request.app.state.settings.pat_count_limit}). "
-                "Please revoke old tokens before creating new ones.",
+                "Please revoke old tokens before creating new ones."
             ),
         )
 
