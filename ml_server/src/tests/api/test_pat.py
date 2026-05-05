@@ -1,6 +1,7 @@
 """Tests for Personal Access Token endpoints."""
 import hashlib
 from sqlalchemy import select
+from unittest.mock import AsyncMock, patch, ANY
 
 from src.tests.conftest import make_user, make_pat, make_session
 from src.ml_server.models.pat import PersonalAccessToken
@@ -27,7 +28,11 @@ async def test_create_pat_returns_201_and_raw_token(client, db_session):
     us = await make_session(db_session, user)
     client.cookies.set("session", us.token)
 
-    resp = await client.post(CREATE_URL, json=VALID_BODY)
+    with patch(
+        "src.ml_server.routes.pat.send_pat_creation_email",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        resp = await client.post(CREATE_URL, json=VALID_BODY)
 
     assert resp.status_code == 201
     data = resp.json()
@@ -37,6 +42,7 @@ async def test_create_pat_returns_201_and_raw_token(client, db_session):
     assert set(data["scopes"]) == set(VALID_BODY["scopes"])
     assert data["is_active"] is True
     assert "token_hash" not in data  # never expose hash
+    mock_send.assert_awaited_once_with(user.email, data["name"], ANY, ANY)
 
 
 async def test_create_pat_raw_token_not_stored_plaintext(client, db_session):
@@ -44,13 +50,19 @@ async def test_create_pat_raw_token_not_stored_plaintext(client, db_session):
     us = await make_session(db_session, user)
     client.cookies.set("session", us.token)
 
-    resp = await client.post(CREATE_URL, json=VALID_BODY)
+    with patch(
+        "src.ml_server.routes.pat.send_pat_creation_email",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        resp = await client.post(CREATE_URL, json=VALID_BODY)
     raw = resp.json()["raw_token"]
 
     result = await db_session.execute(select(PersonalAccessToken))
     pat = result.scalar_one()
     assert pat.token_hash != raw
     assert pat.token_hash == hashlib.sha256(raw.encode()).hexdigest()
+    data = resp.json()
+    mock_send.assert_awaited_once_with(user.email, data["name"], ANY, ANY)
 
 
 async def test_create_pat_persists_in_db(client, db_session):
@@ -58,7 +70,11 @@ async def test_create_pat_persists_in_db(client, db_session):
     us = await make_session(db_session, user)
     client.cookies.set("session", us.token)
 
-    await client.post(CREATE_URL, json=VALID_BODY)
+    with patch(
+        "src.ml_server.routes.pat.send_pat_creation_email",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        resp = await client.post(CREATE_URL, json=VALID_BODY)
 
     result = await db_session.execute(
         select(PersonalAccessToken).where(PersonalAccessToken.user_id == user.id)
@@ -67,6 +83,8 @@ async def test_create_pat_persists_in_db(client, db_session):
     assert pat is not None
     assert pat.name == "CI Pipeline"
     assert pat.is_active is True
+    data = resp.json()
+    mock_send.assert_awaited_once_with(user.email, data["name"], ANY, ANY)
 
 
 async def test_create_pat_with_no_expiry(client, db_session):
@@ -75,10 +93,16 @@ async def test_create_pat_with_no_expiry(client, db_session):
     client.cookies.set("session", us.token)
 
     body = {**VALID_BODY, "expires_in_days": None}
-    resp = await client.post(CREATE_URL, json=body)
+    with patch(
+        "src.ml_server.routes.pat.send_pat_creation_email",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        resp = await client.post(CREATE_URL, json=body)
 
     assert resp.status_code == 201
     assert resp.json()["expires_at"] is None
+    data = resp.json()
+    mock_send.assert_awaited_once_with(user.email, data["name"], ANY, ANY)
 
 
 async def test_create_pat_invalid_scope_returns_422(client, db_session):
@@ -87,9 +111,14 @@ async def test_create_pat_invalid_scope_returns_422(client, db_session):
     client.cookies.set("session", us.token)
 
     body = {**VALID_BODY, "scopes": ["inference:invalid"]}
-    resp = await client.post(CREATE_URL, json=body)
+    with patch(
+        "src.ml_server.routes.pat.send_pat_creation_email",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        resp = await client.post(CREATE_URL, json=body)
 
     assert resp.status_code == 422
+    mock_send.assert_not_awaited()
 
 
 async def test_create_pat_empty_scopes_returns_422(client, db_session):
@@ -98,9 +127,14 @@ async def test_create_pat_empty_scopes_returns_422(client, db_session):
     client.cookies.set("session", us.token)
 
     body = {**VALID_BODY, "scopes": []}
-    resp = await client.post(CREATE_URL, json=body)
+    with patch(
+        "src.ml_server.routes.pat.send_pat_creation_email",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        resp = await client.post(CREATE_URL, json=body)
 
     assert resp.status_code == 422
+    mock_send.assert_not_awaited()
 
 
 async def test_create_pat_empty_name_returns_422(client, db_session):
@@ -109,14 +143,24 @@ async def test_create_pat_empty_name_returns_422(client, db_session):
     client.cookies.set("session", us.token)
 
     body = {**VALID_BODY, "name": ""}
-    resp = await client.post(CREATE_URL, json=body)
+    with patch(
+        "src.ml_server.routes.pat.send_pat_creation_email",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        resp = await client.post(CREATE_URL, json=body)
 
     assert resp.status_code == 422
+    mock_send.assert_not_awaited()
 
 
 async def test_create_pat_unauthenticated_returns_401(client, db_session):
-    resp = await client.post(CREATE_URL, json=VALID_BODY)
+    with patch(
+        "src.ml_server.routes.pat.send_pat_creation_email",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        resp = await client.post(CREATE_URL, json=VALID_BODY)
     assert resp.status_code == 401
+    mock_send.assert_not_awaited()
 
 
 async def test_create_pat_expired_session_returns_401(client, db_session):
@@ -124,8 +168,13 @@ async def test_create_pat_expired_session_returns_401(client, db_session):
     us = await make_session(db_session, user, expired=True)
     client.cookies.set("session", us.token)
 
-    resp = await client.post(CREATE_URL, json=VALID_BODY)
+    with patch(
+        "src.ml_server.routes.pat.send_pat_creation_email",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        resp = await client.post(CREATE_URL, json=VALID_BODY)
     assert resp.status_code == 401
+    mock_send.assert_not_awaited()
 
 
 async def test_create_pat_prefix_is_correct_length(client, db_session):
@@ -133,10 +182,15 @@ async def test_create_pat_prefix_is_correct_length(client, db_session):
     us = await make_session(db_session, user)
     client.cookies.set("session", us.token)
 
-    resp = await client.post(CREATE_URL, json=VALID_BODY)
+    with patch(
+        "src.ml_server.routes.pat.send_pat_creation_email",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        resp = await client.post(CREATE_URL, json=VALID_BODY)
     data = resp.json()
 
     assert data["token_prefix"] == data["raw_token"][:8]
+    mock_send.assert_awaited_once_with(user.email, data["name"], ANY, ANY)
 
 
 async def test_create_pat_scopes_deduplicated(client, db_session):
@@ -145,10 +199,16 @@ async def test_create_pat_scopes_deduplicated(client, db_session):
     client.cookies.set("session", us.token)
 
     body = {**VALID_BODY, "scopes": ["inference:basic", "inference:basic", "inference:basic"]}
-    resp = await client.post(CREATE_URL, json=body)
+    with patch(
+        "src.ml_server.routes.pat.send_pat_creation_email",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        resp = await client.post(CREATE_URL, json=body)
 
     assert resp.status_code == 201
     assert resp.json()["scopes"].count("inference:basic") == 1
+    data = resp.json()
+    mock_send.assert_awaited_once_with(user.email, data["name"], ANY, ANY)
 
 
 async def test_create_pat_exceeding_limit_returns_400(client, db_session, app):
@@ -160,10 +220,15 @@ async def test_create_pat_exceeding_limit_returns_400(client, db_session, app):
         await make_pat(db_session, user, name=f"Token {i+1}")
 
     # Now attempt to create one more, which should fail
-    resp = await client.post(CREATE_URL, json=VALID_BODY)
+    with patch(
+        "src.ml_server.routes.pat.send_pat_creation_email",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        resp = await client.post(CREATE_URL, json=VALID_BODY)
 
     assert resp.status_code == 400
     assert "PAT limit reached" in resp.json()["detail"]
+    mock_send.assert_not_awaited()
 
 
 # ── GET /api/tokens ───────────────────────────────────────────────────────────
@@ -334,9 +399,14 @@ async def test_revoke_pat_returns_200(client, db_session):
     pat, _ = await make_pat(db_session, user)
     client.cookies.set("session", us.token)
 
-    resp = await client.delete(f"/api/tokens/{pat.id}")
+    with patch(
+        "src.ml_server.routes.pat.send_pat_revocation_email",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        resp = await client.delete(f"/api/tokens/{pat.id}")
 
     assert resp.status_code == 200
+    mock_send.assert_awaited_once_with(user.email, pat.name, ANY)
 
 
 async def test_revoke_pat_sets_is_active_false(client, db_session):
@@ -345,7 +415,11 @@ async def test_revoke_pat_sets_is_active_false(client, db_session):
     pat, _ = await make_pat(db_session, user)
     client.cookies.set("session", us.token)
 
-    await client.delete(f"/api/tokens/{pat.id}")
+    with patch(
+        "src.ml_server.routes.pat.send_pat_revocation_email",
+        new_callable=AsyncMock,
+    ):
+        await client.delete(f"/api/tokens/{pat.id}")
     await db_session.refresh(pat)
 
     assert pat.is_active is False
@@ -356,9 +430,14 @@ async def test_revoke_pat_not_found_returns_404(client, db_session):
     us = await make_session(db_session, user)
     client.cookies.set("session", us.token)
 
-    resp = await client.delete("/api/tokens/99999")
+    with patch(
+        "src.ml_server.routes.pat.send_pat_revocation_email",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        resp = await client.delete("/api/tokens/99999")
 
     assert resp.status_code == 404
+    mock_send.assert_not_awaited()
 
 
 async def test_revoke_pat_other_user_returns_404(client, db_session):
@@ -369,9 +448,14 @@ async def test_revoke_pat_other_user_returns_404(client, db_session):
     pat, _ = await make_pat(db_session, user1)  # belongs to user1
     client.cookies.set("session", us2.token)
 
-    resp = await client.delete(f"/api/tokens/{pat.id}")
+    with patch(
+        "src.ml_server.routes.pat.send_pat_revocation_email",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        resp = await client.delete(f"/api/tokens/{pat.id}")
 
     assert resp.status_code == 404
+    mock_send.assert_not_awaited()
     # Verify token still active
     await db_session.refresh(pat)
     assert pat.is_active is True
@@ -383,11 +467,21 @@ async def test_revoke_already_revoked_returns_409(client, db_session):
     pat, _ = await make_pat(db_session, user, is_active=False)
     client.cookies.set("session", us.token)
 
-    resp = await client.delete(f"/api/tokens/{pat.id}")
+    with patch(
+        "src.ml_server.routes.pat.send_pat_revocation_email",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        resp = await client.delete(f"/api/tokens/{pat.id}")
 
     assert resp.status_code == 409
+    mock_send.assert_not_awaited()
 
 
 async def test_revoke_pat_unauthenticated_returns_401(client, db_session):
-    resp = await client.delete("/api/tokens/1")
+    with patch(
+        "src.ml_server.routes.pat.send_pat_revocation_email",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        resp = await client.delete("/api/tokens/1")
     assert resp.status_code == 401
+    mock_send.assert_not_awaited()
