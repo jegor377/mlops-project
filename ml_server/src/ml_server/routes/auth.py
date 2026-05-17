@@ -3,6 +3,7 @@ import secrets
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
+from fastapi.responses import RedirectResponse
 from typing import Annotated
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
@@ -17,6 +18,7 @@ from src.ml_server.models.password_reset import PasswordReset
 
 from src.ml_server.schemas.user import UserCreate, UserLogin, ForgotPassword, ResetPassword
 
+from src.ml_server.dependencies.settings import get_settings
 from src.ml_server.dependencies.db import get_session
 from src.ml_server.dependencies.current_user import get_current_user
 
@@ -31,6 +33,7 @@ logger = logging.getLogger(__name__)
 async def register(
     request: UserCreate,
     session: Annotated[AsyncSession, Depends(get_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
     req: Request,
 ):
     password_hash = bcrypt.hashpw(request.password.encode("utf-8"), bcrypt.gensalt())
@@ -54,7 +57,7 @@ async def register(
 
     token = secrets.token_urlsafe(32)
     expires_at = datetime.now(timezone.utc) + timedelta(
-        hours=req.app.state.settings.email_verification_expire_hours
+        hours=settings.email_verification_expire_hours
     )
     verification = EmailVerification(
         user_id=new_user.id,
@@ -72,14 +75,14 @@ async def register(
         raise HTTPException(status_code=500, detail="Internal server error")
 
     try:
-        token_url = req.app.state.settings.hostname
+        token_url = settings.hostname
         token_url += req.app.url_path_for("verify_email")
         token_url += "?" + urlencode({"token": token})
 
         await send_verification_email(
             new_user.email,
             token_url,
-            req.app.state.settings,
+            settings,
         )
     except Exception as e:
         # User and token are persisted — they can be resent later.
@@ -137,6 +140,7 @@ async def verify_email(
 async def login(
     request: UserLogin,
     session: Annotated[AsyncSession, Depends(get_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
     req: Request,
 ):
     result = await session.execute(select(User).where(User.email == request.email))
@@ -163,7 +167,7 @@ async def login(
     # Issue session token
     token = secrets.token_urlsafe(32)
     expires_at = datetime.now(timezone.utc) + timedelta(
-        hours=req.app.state.settings.session_expire_hours
+        hours=settings.session_expire_hours
     )
     session_record = UserSession(
         user_id=user.id,
@@ -179,7 +183,7 @@ async def login(
         logger.error(f"Failed to persist session for user {user.id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-    secure = req.app.state.settings.env != "development"
+    secure = settings.env != "development"
     response = Response(status_code=200)
     response.set_cookie(
         key="session",
@@ -196,6 +200,7 @@ async def login(
 async def forgot_password(
     request: ForgotPassword,
     session: Annotated[AsyncSession, Depends(get_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
     req: Request,
 ):
     result = await session.execute(select(User).where(User.email == request.email))
@@ -214,7 +219,7 @@ async def forgot_password(
 
     token = secrets.token_urlsafe(32)
     expires_at = datetime.now(timezone.utc) + timedelta(
-        hours=req.app.state.settings.password_reset_expire_hours
+        hours=settings.password_reset_expire_hours
     )
     reset = PasswordReset(
         user_id=user.id,
@@ -231,14 +236,14 @@ async def forgot_password(
         return Response(status_code=200)  # Still don't leak anything
 
     try:
-        token_url = req.app.state.settings.hostname
+        token_url = settings.hostname
         token_url += "/reset-password"
         token_url += "?" + urlencode({"token": token})
 
         await send_password_reset_email(
             user.email,
             token_url,
-            req.app.state.settings,
+            settings,
         )
     except Exception as e:
         logger.error(f"Failed to send password reset email to {user.email}: {e}")

@@ -35,6 +35,7 @@ async def create_pat(
     request: Request,
     session: Annotated[AsyncSession, Depends(get_session)],
     user: Annotated[User, Depends(get_current_user)],
+    settings: Annotated[Settings, Depends(get_settings)],
 ) -> PATCreateResponse:
     """Create a new PAT. Returns raw token once — store it securely."""
     now = datetime.now(timezone.utc)
@@ -52,11 +53,11 @@ async def create_pat(
         .where(count_condition)
     )
     pat_count = pat_count_result.scalar_one()
-    if pat_count >= request.app.state.settings.pat_count_limit:
+    if pat_count >= settings.pat_count_limit:
         raise HTTPException(
             status_code=400,
             detail=(
-                f"PAT limit reached ({pat_count}/{request.app.state.settings.pat_count_limit}). "
+                f"PAT limit reached ({pat_count}/{settings.pat_count_limit}). "
                 "Please revoke old tokens before creating new ones."
             ),
         )
@@ -109,7 +110,7 @@ async def create_pat(
         pat.scopes.split(","),
         body.expires_in_days,
         pat.expires_at,
-        request.app.state.settings
+        settings
     )
 
     return PATCreateResponse(
@@ -217,6 +218,7 @@ async def revoke_pat(
     request: Request,
     session: Annotated[AsyncSession, Depends(get_session)],
     user: Annotated[User, Depends(get_current_user)],
+    settings: Annotated[Settings, Depends(get_settings)],
 ) -> None:
     """Revoke (soft-delete) a PAT. Only owner can revoke."""
     result = await session.execute(
@@ -243,5 +245,5 @@ async def revoke_pat(
         logger.error(f"Failed to revoke PAT {token_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-    await send_pat_revocation_email(user.email, pat.name, request.app.state.settings)
+    await send_pat_revocation_email(user.email, pat.name, settings)
     return Response(status_code=200)

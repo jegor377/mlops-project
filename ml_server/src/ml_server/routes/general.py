@@ -14,8 +14,9 @@ async def predict(
     request: LLMRequest,
     req: Request,
     pat: Annotated[PersonalAccessToken, Depends(get_pat(scopes=["inference:basic"]))],
+    settings: Annotated[Settings, Depends(get_settings)],
 ) -> LLMResponse:
-    if req.app.state.settings.load_model:
+    if settings.load_model:
         response = req.app.state.model.predict([request.text])
     else:
         response = [

@@ -14,12 +14,11 @@ def create_app(settings: Settings) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         app.logger = logging.getLogger(__name__)
-        app.state.settings = settings
         # Load the ML model
         if settings.load_model:
             app.state.model = Model()
         engine = create_async_engine(
-            settings.db_uri,
+            settings.async_db_uri,
             pool_size=settings.pool_size,
             max_overflow=settings.max_overflow,
         )
@@ -27,7 +26,7 @@ def create_app(settings: Settings) -> FastAPI:
         app.state.db = async_sessionmaker(engine, expire_on_commit=False)
         yield
         # Clean up the ML models and release the resources
-        if app.state.settings.load_model:
+        if settings.load_model:
             del app.state.model
         await engine.dispose()
 
