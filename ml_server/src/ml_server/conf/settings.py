@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     password_reset_expire_hours: int = 1
     pat_count_limit: int = 50
     google_oauth2_creds: GoogleOAuth2Credentials
-    
+
     model_config = SettingsConfigDict(
         env_file='.env',
         secrets_dir='/run/secrets',
@@ -57,8 +57,7 @@ class Settings(BaseSettings):
         env_nested_delimiter='__',
         case_sensitive=False,
     )
-    
-    
+
     @classmethod
     def settings_customise_sources(
         cls,
@@ -74,8 +73,7 @@ class Settings(BaseSettings):
             dotenv_settings,
             NestedSecretsSettingsSource(file_secret_settings),
         )
-    
-    
+
     @property
     def async_db_uri(self) -> str:
         return str(self.db_uri).replace(

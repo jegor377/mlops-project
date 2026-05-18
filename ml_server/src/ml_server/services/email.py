@@ -12,7 +12,7 @@ def _make_mailer(settings: Settings) -> FastMail:
     else:
         username = ''
         password = ''
-    
+
     mail_config = ConnectionConfig(
         MAIL_USERNAME=username,
         MAIL_PASSWORD=password,
