@@ -53,13 +53,12 @@ async def engine(test_settings):
 @pytest_asyncio.fixture
 async def db_session(engine):
     async with engine.connect() as conn:
-        trans = await conn.begin()
-        session_factory = async_sessionmaker(bind=conn, expire_on_commit=False)
-        async with session_factory() as session:
-            try:
+        async with conn.begin():
+            async_session = async_sessionmaker(bind=conn, expire_on_commit=False)
+
+            async with async_session() as session:
                 yield session
-            finally:
-                await trans.rollback()
+                await session.rollback()
 
 
 @pytest_asyncio.fixture
