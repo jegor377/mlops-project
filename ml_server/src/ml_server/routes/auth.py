@@ -11,6 +11,7 @@ from sqlalchemy import select
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
+from src.ml_server.conf.settings import Settings
 from src.ml_server.models.user import User
 from src.ml_server.models.email_verification import EmailVerification
 from src.ml_server.models.user_session import UserSession

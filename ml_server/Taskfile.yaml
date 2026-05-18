@@ -31,13 +31,6 @@ tasks:
       DB_URI: "{{.DB_URI}}/test_db"
       LOAD_MODEL: "{{.LOAD_MODEL_IN_TESTS}}"
       HOSTNAME: localhost
-      SMTP_HOST: 127.0.0.1
-      SMTP_PORT: 1025
-      SMTP_USE_CREDENTIALS: false
-      SMTP_VALIDATE_CERTS: false
-      SMTP_FROM: no-reply@example.com
-      SMTP_STARTTLS: false
-      SMTP_SSL_TLS: false
       FAIL_FAST: false
     cmds:
       - uv run pytest {{if eq .FAIL_FAST "true"}}--maxfail=1 {{end}}{{.CLI_ARGS | default ""}}

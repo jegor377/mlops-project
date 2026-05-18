@@ -6,16 +6,23 @@ from src.ml_server.conf.settings import Settings
 
 
 def _make_mailer(settings: Settings) -> FastMail:
+    if settings.smtp.credentials is not None:
+        username = settings.smtp.credentials.username
+        password = settings.smtp.credentials.password
+    else:
+        username = ''
+        password = ''
+    
     mail_config = ConnectionConfig(
-        MAIL_USERNAME=settings.smtp_username,
-        MAIL_PASSWORD=settings.smtp_password,
-        MAIL_FROM=settings.smtp_from,
-        MAIL_PORT=settings.smtp_port,
-        MAIL_SERVER=settings.smtp_host,
-        MAIL_STARTTLS=settings.smtp_starttls,
-        MAIL_SSL_TLS=settings.smtp_ssl_tls,
-        USE_CREDENTIALS=settings.smtp_use_credentials,
-        VALIDATE_CERTS=settings.smtp_validate_certs,
+        MAIL_USERNAME=username,
+        MAIL_PASSWORD=password,
+        MAIL_FROM=settings.smtp.from_email_address,
+        MAIL_PORT=settings.smtp.port,
+        MAIL_SERVER=settings.smtp.host,
+        MAIL_STARTTLS=settings.smtp.security == 'starttls',
+        MAIL_SSL_TLS=settings.smtp.security == 'tls',
+        USE_CREDENTIALS=settings.smtp.credentials is not None,
+        VALIDATE_CERTS=settings.smtp.security != 'none',
     )
     return FastMail(mail_config)
 

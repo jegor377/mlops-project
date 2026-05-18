@@ -211,12 +211,12 @@ async def test_create_pat_scopes_deduplicated(client, db_session):
     mock_send.assert_awaited_once_with(user.email, data["name"], ANY, ANY, ANY, ANY)
 
 
-async def test_create_pat_exceeding_limit_returns_400(client, db_session, app):
+async def test_create_pat_exceeding_limit_returns_400(client, db_session, app, test_settings):
     user = await make_user(db_session)
     us = await make_session(db_session, user)
     client.cookies.set("session", us.token)
     # Create max allowed tokens
-    for i in range(app.state.settings.pat_count_limit):
+    for i in range(test_settings.pat_count_limit):
         await make_pat(db_session, user, name=f"Token {i+1}")
 
     # Now attempt to create one more, which should fail

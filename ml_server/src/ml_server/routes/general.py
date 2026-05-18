@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Request, Depends
 from typing import Annotated
 
+from src.ml_server.conf.settings import Settings
 from src.ml_server.dependencies.pat_token import get_pat
+from src.ml_server.dependencies.settings import get_settings
 from src.ml_server.models.pat import PersonalAccessToken
 from src.ml_server.schemas.llm import LLMRequest, LLMResponse
 

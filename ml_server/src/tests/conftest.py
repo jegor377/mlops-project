@@ -1,4 +1,5 @@
 import pytest_asyncio
+import pytest
 import bcrypt
 import secrets
 import hashlib
@@ -11,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.ml_server.conf.settings import Settings
 from src.ml_server.app import create_app
 from src.ml_server.dependencies.db import get_session
+from src.ml_server.dependencies.settings import get_settings
 from src.ml_server.models.base import Base
 from src.ml_server.models import *  # noqa: F401, F403
 from src.ml_server.models.pat import PersonalAccessToken
@@ -18,22 +20,25 @@ from src.ml_server.models.user import User
 from src.ml_server.models.user_session import UserSession
 
 
-test_settings = Settings()
-
 LOGIN_PAYLOAD = {"email": "test@example.com", "password": "testpassword"}
 
 
+@pytest.fixture
+def test_settings():
+    return Settings()
+
+
 @pytest_asyncio.fixture()
-async def app():
+async def app(test_settings):
     app = create_app(test_settings)
     async with LifespanManager(app):
         yield app
 
 
 @pytest_asyncio.fixture()
-async def engine():
+async def engine(test_settings):
     eng = create_async_engine(
-        test_settings.db_uri,
+        test_settings.async_db_uri,
         pool_size=test_settings.pool_size,
         max_overflow=test_settings.max_overflow,
     )
@@ -58,11 +63,15 @@ async def db_session(engine):
 
 
 @pytest_asyncio.fixture
-async def client(app, db_session):
+async def client(app, db_session, test_settings):
     async def override_get_session():
         yield db_session
 
+    def override_get_settings():
+        return test_settings
+
     app.dependency_overrides[get_session] = override_get_session
+    app.dependency_overrides[get_settings] = override_get_settings
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
     ) as c:

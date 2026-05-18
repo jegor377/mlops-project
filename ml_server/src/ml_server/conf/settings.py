@@ -1,4 +1,8 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import (
+    BaseSettings,
+    SettingsConfigDict,
+    NestedSecretsSettingsSource,
+)
 from pydantic import (
     BaseModel,
     PostgresDsn,
@@ -15,7 +19,7 @@ class SMTPSettings(BaseModel):
     host: str = 'smtp.example.com'
     port: int = 1025
     from_email_address: str
-    credentials: SMTPCredentials | None
+    credentials: SMTPCredentials | None = None
     security: Literal[
         "none",
         "starttls",
@@ -47,8 +51,11 @@ class Settings(BaseSettings):
     google_oauth2_creds: GoogleOAuth2Credentials
     
     model_config = SettingsConfigDict(
-        secrets_dir='secrets',
-        secrets_nested_delimiter='_',
+        env_file='.env',
+        secrets_dir='/run/secrets',
+        secrets_nested_delimiter='__',
+        env_nested_delimiter='__',
+        case_sensitive=False,
     )
     
     
@@ -72,7 +79,11 @@ class Settings(BaseSettings):
     @property
     def async_db_uri(self) -> str:
         return str(self.db_uri).replace(
-            "postgresql://", "postgresql+asyncpg://"
+            "postgresql://",
+            "postgresql+asyncpg://",
+            1,
         ).replace(
-            "postgres://", "postgresql+asyncpg://"
+            "postgres://",
+            "postgresql+asyncpg://",
+            1,
         )

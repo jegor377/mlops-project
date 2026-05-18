@@ -7,8 +7,10 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, Query
 from sqlalchemy import select, func, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.ml_server.conf.settings import Settings
 from src.ml_server.dependencies.db import get_session
 from src.ml_server.dependencies.current_user import get_current_user
+from src.ml_server.dependencies.settings import get_settings
 from src.ml_server.models.pat import PersonalAccessToken
 from src.ml_server.models.user import User
 from src.ml_server.schemas.pat import (
@@ -20,7 +22,7 @@ from src.ml_server.schemas.pat import (
     PATStatsResponse,
     VALID_SCOPES,
 )
-from src.ml_server.services.pat import _hash_token
+from src.ml_server.services.pat import hash_token
 from src.ml_server.services.email import send_pat_creation_email, send_pat_revocation_email
 
 router = APIRouter()
@@ -74,7 +76,7 @@ async def create_pat(
 
     # Generate token
     raw_token = TOKEN_PREFIX + secrets.token_urlsafe(40)
-    token_hash = _hash_token(raw_token)
+    token_hash = hash_token(raw_token)
     token_prefix = raw_token[:8]  # "vlt_XXXX"
 
     now = datetime.now(timezone.utc)
