@@ -1,7 +1,8 @@
+from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from authlib.integrations.starlette_client import OAuth
-from fastapi import FastAPI
+from starlette.middleware.sessions import SessionMiddleware
 import logging
 
 from src.ml_server.conf.settings import Settings
@@ -48,7 +49,16 @@ def create_app(settings: Settings) -> FastAPI:
             del app.state.model
         await engine.dispose()
 
+    is_secure = settings.env != "development"
     app = FastAPI(docs_url="/docs", lifespan=lifespan)
+    app.add_middleware(
+        SessionMiddleware,
+        secret_key=settings.oauth_state_session_secret_key,
+        session_cookie="oauth_state",  # avoid colliding with your auth session cookie
+        max_age=300,  # OAuth state only needs to live for a few minutes
+        https_only=is_secure,
+        same_site="lax",
+    )
     app.include_router(general_router)
     app.include_router(auth_router)
     app.include_router(pat_router)

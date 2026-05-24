@@ -39,6 +39,8 @@ class Settings(BaseSettings):
         'production'
     ] = 'development'
     hostname: str
+    frontend_hostname: str
+    oauth_state_session_secret_key: str
     db_uri: PostgresDsn
     load_model: bool
     pool_size: int = 5

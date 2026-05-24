@@ -151,7 +151,7 @@ async def verify_email(
         logger.error(f"Failed to activate user {verification.user_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-    login_uri = settings.hostname
+    login_uri = settings.frontend_hostname
     login_uri += FrontendURLs.LOGIN
     login_uri += "?" + urlencode({"just-activated": "true"})
 
@@ -346,9 +346,8 @@ async def auth_google(
 ):
     redirect_uri = settings.hostname
     redirect_uri += req.app.url_path_for("google_callback")
-
+    
     oauth = req.app.state.oauth
-
     return await oauth.google.authorize_redirect(req, redirect_uri=redirect_uri)
 
 
@@ -359,6 +358,14 @@ async def google_callback(
     session: Annotated[AsyncSession, Depends(get_session)],
     settings: Annotated[Settings, Depends(get_settings)]
 ):
+    # User cancelled the Google consent screen
+    error = req.query_params.get("error")
+    if error:
+        login_uri = settings.frontend_hostname
+        login_uri += FrontendURLs.LOGIN
+        login_uri += "?" + urlencode({"error": "google_login_cancelled"})
+        return RedirectResponse(url=login_uri)
+    
     oauth = req.app.state.oauth
     oauth_token = await oauth.google.authorize_access_token(req)
     user_info = oauth_token.get("userinfo") or {}
@@ -452,7 +459,7 @@ async def google_callback(
         req.app.state.logger
     )
 
-    redirect_uri = settings.hostname
+    redirect_uri = settings.frontend_hostname
     redirect_uri += FrontendURLs.DASHBOARD
 
     response = RedirectResponse(url=redirect_uri)
