@@ -1,4 +1,4 @@
-from src.tests.conftest import make_user, make_pat
+from src.tests.conftest import make_classic_user, make_pat
 
 
 async def test_ping(client):
@@ -7,7 +7,7 @@ async def test_ping(client):
 
 
 async def test_predict_dummy(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     _, raw_token = await make_pat(db_session, user, scopes=["inference:basic"])
     response = await client.post(
         "/api/predict",
@@ -19,7 +19,7 @@ async def test_predict_dummy(client, db_session):
 
 
 async def test_predict_missing_field(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     _, raw_token = await make_pat(db_session, user, scopes=["inference:basic"])
     response = await client.post(
         "/api/predict",
@@ -39,7 +39,7 @@ async def test_predict_dummy_unauthorized(client, db_session):
 
 
 async def test_predict_dummy_insufficient_scopes(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     _, raw_token = await make_pat(db_session, user, scopes=["nonexistent:scope"])
     response = await client.post(
         "/api/predict",

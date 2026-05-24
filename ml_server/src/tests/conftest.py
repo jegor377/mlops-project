@@ -17,6 +17,7 @@ from src.ml_server.models.base import Base
 from src.ml_server.models import *  # noqa: F401, F403
 from src.ml_server.models.pat import PersonalAccessToken
 from src.ml_server.models.user import User
+from src.ml_server.models.user_auth_method import UserAuthMethod, AuthProvider
 from src.ml_server.models.user_session import UserSession
 
 
@@ -78,10 +79,20 @@ async def client(app, db_session, test_settings):
     app.dependency_overrides.pop(get_session, None)
 
 
-async def make_user(session: AsyncSession, email: str = LOGIN_PAYLOAD["email"], is_active: bool = True) -> User:
+async def make_classic_user(session: AsyncSession, email: str = LOGIN_PAYLOAD["email"], is_active: bool = True) -> User:
     pw_hash = bcrypt.hashpw(LOGIN_PAYLOAD["password"].encode(), bcrypt.gensalt()).decode()
-    user = User(email=email, password_hash=pw_hash, is_active=is_active)
+    user = User(
+        email=email,
+        is_active=is_active
+    )
+    auth_method = UserAuthMethod(
+        user=user,
+        provider=AuthProvider.CLASSIC,
+        provider_user_id=email,
+        password_hash=pw_hash,
+    )
     session.add(user)
+    session.add(auth_method)
     await session.commit()
     await session.refresh(user)
     return user

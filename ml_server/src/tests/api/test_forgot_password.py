@@ -6,8 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.ml_server.models.password_reset import PasswordReset
 from src.ml_server.models.user import User
+from src.ml_server.models.user_auth_method import UserAuthMethod, AuthProvider
 
-from src.tests.conftest import make_user, LOGIN_PAYLOAD
+from src.tests.conftest import make_classic_user, LOGIN_PAYLOAD
 
 
 # ---------------------------------------------------------------------------
@@ -44,7 +45,7 @@ async def _create_reset_token(
 
 
 async def test_forgot_password_sends_email_for_existing_user(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
 
     with patch(
         "src.ml_server.routes.auth.send_password_reset_email",
@@ -78,9 +79,11 @@ async def test_forgot_password_returns_200_for_unknown_email(client, db_session)
 
 async def test_forgot_password_returns_200_for_inactive_user(client, db_session):
     """Inactive (unverified) accounts should not receive reset emails."""
-    user = User(email="inactive@example.com", password_hash="x", is_active=False)
-    db_session.add(user)
-    await db_session.commit()
+    user = await make_classic_user(
+        db_session,
+        email="inactive@example.com",
+        is_active=False,
+    )
 
     with patch(
         "src.ml_server.routes.auth.send_password_reset_email",
@@ -94,7 +97,7 @@ async def test_forgot_password_returns_200_for_inactive_user(client, db_session)
 
 async def test_forgot_password_invalidates_existing_token(client, db_session):
     """A second request must replace the old token, not accumulate tokens."""
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     old_reset = await _create_reset_token(db_session, user)
 
     with patch("src.ml_server.routes.auth.send_password_reset_email", new_callable=AsyncMock):
@@ -114,7 +117,7 @@ async def test_forgot_password_invalidates_existing_token(client, db_session):
 
 async def test_forgot_password_email_failure_still_returns_200(client, db_session):
     """SMTP failure must not leak an error to the caller."""
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
 
     with patch(
         "src.ml_server.routes.auth.send_password_reset_email",
@@ -134,7 +137,7 @@ async def test_forgot_password_email_failure_still_returns_200(client, db_sessio
 async def test_reset_password_updates_hash_and_deletes_token(client, db_session):
     import bcrypt
 
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     reset = await _create_reset_token(db_session, user)
 
     response = await client.post(
@@ -143,9 +146,16 @@ async def test_reset_password_updates_hash_and_deletes_token(client, db_session)
     )
 
     assert response.status_code == 200
-
+    
     await db_session.refresh(user)
-    assert bcrypt.checkpw(NEW_PASSWORD.encode(), user.password_hash.encode())
+    stmt = select(UserAuthMethod).where(
+        UserAuthMethod.user_id == user.id,
+        UserAuthMethod.provider == AuthProvider.CLASSIC,
+        UserAuthMethod.provider_user_id == LOGIN_PAYLOAD["email"],
+    )
+    result = await db_session.execute(stmt)
+    auth_method = result.scalar_one_or_none()
+    assert bcrypt.checkpw(NEW_PASSWORD.encode(), auth_method.password_hash.encode())
 
     result = await db_session.execute(
         select(PasswordReset).where(PasswordReset.id == reset.id)
@@ -154,7 +164,7 @@ async def test_reset_password_updates_hash_and_deletes_token(client, db_session)
 
 
 async def test_reset_password_expired_token_returns_400(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     reset = await _create_reset_token(db_session, user, expired=True)
 
     response = await client.post(
@@ -166,7 +176,7 @@ async def test_reset_password_expired_token_returns_400(client, db_session):
 
 
 async def test_reset_password_expired_token_is_deleted(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     reset = await _create_reset_token(db_session, user, expired=True)
 
     await client.post(
@@ -192,7 +202,7 @@ async def test_reset_password_invalid_token_returns_400(client, db_session):
 async def test_reset_password_old_password_no_longer_works(client, db_session):
     import bcrypt
 
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     reset = await _create_reset_token(db_session, user)
 
     await client.post(
@@ -201,4 +211,11 @@ async def test_reset_password_old_password_no_longer_works(client, db_session):
     )
 
     await db_session.refresh(user)
-    assert not bcrypt.checkpw(LOGIN_PAYLOAD["password"].encode(), user.password_hash.encode())
+    stmt = select(UserAuthMethod).where(
+        UserAuthMethod.user_id == user.id,
+        UserAuthMethod.provider == AuthProvider.CLASSIC,
+        UserAuthMethod.provider_user_id == LOGIN_PAYLOAD["email"],
+    )
+    result = await db_session.execute(stmt)
+    auth_method = result.scalar_one_or_none()
+    assert not bcrypt.checkpw(LOGIN_PAYLOAD["password"].encode(), auth_method.password_hash.encode())

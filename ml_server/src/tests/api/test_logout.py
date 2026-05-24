@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import select
 
 from src.ml_server.models.user_session import UserSession
-from src.tests.conftest import make_user, make_session, LOGIN_PAYLOAD
+from src.tests.conftest import make_classic_user, make_session, LOGIN_PAYLOAD
 
 
 LOGOUT_URL = "/auth/logout"
@@ -10,7 +10,7 @@ LOGIN_URL = "/auth/login"
 
 
 async def test_logout_returns_200(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     user_session = await make_session(db_session, user)
     client.cookies.set("session", user_session.token)
 
@@ -20,7 +20,7 @@ async def test_logout_returns_200(client, db_session):
 
 
 async def test_logout_deletes_session_from_db(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     user_session = await make_session(db_session, user)
     client.cookies.set("session", user_session.token)
 
@@ -33,7 +33,7 @@ async def test_logout_deletes_session_from_db(client, db_session):
 
 
 async def test_logout_clears_session_cookie(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     user_session = await make_session(db_session, user)
     client.cookies.set("session", user_session.token)
 
@@ -61,7 +61,7 @@ async def test_logout_with_invalid_token_returns_200(client, db_session):
 
 async def test_logout_does_not_delete_other_user_sessions(client, db_session):
     """Only the presented token's session is removed."""
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     target_session = await make_session(db_session, user)
 
     other_session = UserSession(
@@ -84,7 +84,7 @@ async def test_logout_does_not_delete_other_user_sessions(client, db_session):
 
 async def test_login_then_logout_full_flow(client, db_session):
     """Login creates session, logout destroys it."""
-    await make_user(db_session)
+    await make_classic_user(db_session)
 
     login_response = await client.post(LOGIN_URL, json=LOGIN_PAYLOAD)
     assert login_response.status_code == 200

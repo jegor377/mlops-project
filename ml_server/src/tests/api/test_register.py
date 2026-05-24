@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.ml_server.models.email_verification import EmailVerification
 from src.ml_server.models.user import User
+from src.ml_server.models.user_auth_method import UserAuthMethod, AuthProvider
 
 
 # ---------------------------------------------------------------------------
@@ -38,6 +39,17 @@ async def test_register_creates_inactive_user_and_sends_email(client, db_session
     user = result.scalar_one_or_none()
     assert user is not None
     assert user.is_active is False
+
+    # Classic auth method created
+    result = await db_session.execute(
+        select(UserAuthMethod).where(
+            UserAuthMethod.user_id == user.id,
+            UserAuthMethod.provider == AuthProvider.CLASSIC,
+        )
+    )
+    auth_method = result.scalar_one_or_none()
+    assert auth_method is not None
+    assert auth_method.password_hash is not None
 
     # Verification token created
     result = await db_session.execute(
@@ -81,14 +93,23 @@ async def test_register_email_send_failure_still_returns_201(client, db_session)
 # ---------------------------------------------------------------------------
 
 
-async def _create_user_and_token(
+async def _create_user_and_verification_token(
     session: AsyncSession,
     *,
     expired: bool = False,
 ) -> tuple[User, EmailVerification]:
-    user = User(email="verify@example.com", password_hash="x", is_active=False)
+    user = User(email="verify@example.com", is_active=False)
     session.add(user)
     await session.flush()
+
+    # Also create classic auth method (model no longer has password_hash on User)
+    auth_method = UserAuthMethod(
+        user_id=user.id,
+        provider=AuthProvider.CLASSIC,
+        provider_user_id=user.email,
+        password_hash="x",
+    )
+    session.add(auth_method)
 
     delta = timedelta(hours=-1) if expired else timedelta(hours=24)
     verification = EmailVerification(
@@ -104,13 +125,14 @@ async def _create_user_and_token(
 
 
 async def test_verify_email_activates_user(client, db_session):
-    user, verification = await _create_user_and_token(db_session)
+    user, verification = await _create_user_and_verification_token(db_session)
 
     response = await client.get(VERIFY_URL, params={"token": verification.token})
 
-    assert response.status_code == 200
+    assert response.status_code == 307 # redirect to login page
     await db_session.refresh(user)
     assert user.is_active is True
+    assert user.activated_at is not None
 
     # Token must be deleted
     result = await db_session.execute(
@@ -120,7 +142,7 @@ async def test_verify_email_activates_user(client, db_session):
 
 
 async def test_verify_email_expired_token_returns_400(client, db_session):
-    _, verification = await _create_user_and_token(db_session, expired=True)
+    _, verification = await _create_user_and_verification_token(db_session, expired=True)
 
     response = await client.get(VERIFY_URL, params={"token": verification.token})
 
