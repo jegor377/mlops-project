@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from authlib.integrations.starlette_client import OAuth
 from fastapi import FastAPI
 import logging
 
@@ -10,10 +11,24 @@ from src.ml_server.routes.pat import router as pat_router
 from src.ml_server.services.ml_model import Model
 
 
+def configure_google_oauth(oauth: OAuth, settings: Settings):
+    # Configure OAuth
+    oauth.register(
+        name="google",
+        client_id=settings.google_oauth2_creds.client_id,
+        client_secret=settings.google_oauth2_creds.client_secret,
+        authorize_url="https://accounts.google.com/o/oauth2/auth",
+        authorize_params={"scope": "openid email profile"},
+        access_token_url="https://oauth2.googleapis.com/token",
+        client_kwargs={"scope": "openid email profile"},
+        server_metadata_url="https://accounts.google.com/.well-known/openid-configuration"
+    )
+
+
 def create_app(settings: Settings) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        app.logger = logging.getLogger(__name__)
+        app.state.logger = logging.getLogger(__name__)
         # Load the ML model
         if settings.load_model:
             app.state.model = Model()
@@ -24,6 +39,9 @@ def create_app(settings: Settings) -> FastAPI:
         )
         app.state.engine = engine
         app.state.db = async_sessionmaker(engine, expire_on_commit=False)
+        oauth = OAuth()
+        configure_google_oauth(oauth, settings)
+        app.state.oauth = oauth
         yield
         # Clean up the ML models and release the resources
         if settings.load_model:
