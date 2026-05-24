@@ -28,9 +28,13 @@ tasks:
   test:
     desc: "Run the not slow tests"
     env:
+      ENV: development
+      HOSTNAME: localhost
       DB_URI: "{{.DB_URI}}/test_db"
       LOAD_MODEL: "{{.LOAD_MODEL_IN_TESTS}}"
-      HOSTNAME: localhost
+      SMTP__FROM_EMAIL_ADDRESS: no-reply@example.com
+      GOOGLE_OAUTH2_CREDS__CLIENT_ID: dummy-client-id
+      GOOGLE_OAUTH2_CREDS__CLIENT_SECRET: dummy-client-secret
       FAIL_FAST: false
     cmds:
       - uv run pytest {{if eq .FAIL_FAST "true"}}--maxfail=1 {{end}}{{.CLI_ARGS | default ""}}
