@@ -2,6 +2,10 @@
 
 version: '3'
 
+
+dotenv: ['.env', 'ml_server/.env']
+
+
 vars:
   SERVER_IMAGE_REPO: "igorsantarek/ml_server"
   FRONTEND_IMAGE_REPO: "igorsantarek/frontend"

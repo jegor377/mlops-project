@@ -1,28 +1,9 @@
 version: 3
 
 
-vars:
-  DB_HOST: 127.0.0.1
-  DB_PORT: 8081
-  DB_URI: "postgresql://postgres:postgres@{{.DB_HOST}}:{{.DB_PORT}}"
-  LOAD_MODEL_IN_TESTS: true
-  LOAD_MODEL_IN_DEV: false
-
-
 tasks:
   run-dev:
     desc: "Run the mlops server locally"
-    env:
-      DB_URI: "{{.DB_URI}}/dev_db"
-      LOAD_MODEL: "{{.LOAD_MODEL_IN_DEV}}"
-      HOSTNAME: localhost
-      SMTP_HOST: 127.0.0.1
-      SMTP_PORT: 1025
-      SMTP_USE_CREDENTIALS: false
-      SMTP_VALIDATE_CERTS: false
-      SMTP_FROM: no-reply@example.com
-      SMTP_STARTTLS: false
-      SMTP_SSL_TLS: false
     cmds:
       - uv run uvicorn src.ml_server.main:app --reload
   test:
@@ -30,15 +11,14 @@ tasks:
     env:
       ENV: development
       HOSTNAME: localhost
-      DB_URI: "{{.DB_URI}}/test_db"
-      LOAD_MODEL: "{{.LOAD_MODEL_IN_TESTS}}"
+      DB_URI: "postgresql://postgres:postgres@127.0.0.1:8081/test_db"
+      LOAD_MODEL: true
       SMTP__FROM_EMAIL_ADDRESS: no-reply@example.com
       GOOGLE_OAUTH2_CREDS__CLIENT_ID: dummy-client-id
       GOOGLE_OAUTH2_CREDS__CLIENT_SECRET: dummy-client-secret
       FAIL_FAST: false
     cmds:
       - uv run pytest {{if eq .FAIL_FAST "true"}}--maxfail=1 {{end}}{{.CLI_ARGS | default ""}}
-      
   build-image:
     desc: "Build the mlops server docker image"
     cmds:
@@ -100,7 +80,7 @@ tasks:
   psql:
     desc: "Connect to the postgres container using psql"
     cmds:
-      - psql {{.DB_URI}}
+      - psql "$DB_URI"
   alembic:
     desc: "Run alembic commands"
     cmds:
@@ -108,6 +88,7 @@ tasks:
   upgrade-db:
     desc: "Upgrade the database to the latest version"
     cmds:
+      - echo $DB_URI
       - uv run alembic upgrade head
   new-migration:
     desc: "Create a new alembic migration"
