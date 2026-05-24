@@ -15,7 +15,7 @@ export default function LoginPage() {
   const justActivated = searchParams.get("just-activated") === "true";
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
