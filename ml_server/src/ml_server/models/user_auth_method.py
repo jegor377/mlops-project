@@ -1,9 +1,17 @@
+from __future__ import annotations
 from enum import StrEnum
 from datetime import datetime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import Enum, ForeignKey, UniqueConstraint, func, DateTime, String
 
 from src.ml_server.models.base import Base
+
+# make linter be quiet
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.ml_server.models.user import User
 
 
 class AuthProvider(StrEnum):
