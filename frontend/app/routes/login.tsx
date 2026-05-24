@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [searchParams] = useSearchParams();
   const justRegistered = searchParams.get("registered") === "true";
+  const justActivated = searchParams.get("just-activated") === "true";
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -69,12 +70,12 @@ export default function LoginPage() {
         </div>
 
         {/* Success banner */}
-        {justRegistered && (
+        {(justRegistered || justActivated) && (
           <div className="mb-4 px-3 py-2.5 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-sm text-green-700">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="20 6 9 17 4 12" />
             </svg>
-            Account created — please sign in.
+            Account {justRegistered ? (<>created</>) : (<>activated</>)} — please sign in.
           </div>
         )}
 
