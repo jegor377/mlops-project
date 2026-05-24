@@ -13,6 +13,7 @@ export default function LoginPage() {
   const [searchParams] = useSearchParams();
   const justRegistered = searchParams.get("registered") === "true";
   const justActivated = searchParams.get("just-activated") === "true";
+  const googleCancelled = searchParams.get("error") === "google_login_cancelled";
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
@@ -79,6 +80,18 @@ export default function LoginPage() {
           </div>
         )}
 
+        {/* Warning banner */}
+        {googleCancelled && (
+          <div className="mb-4 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-sm text-amber-700">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            Google sign-in was cancelled.
+          </div>
+        )}
+
         {/* Error banner */}
         {error && (
           <div className="mb-4 px-3 py-2.5 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-sm text-red-700">
@@ -142,12 +155,12 @@ export default function LoginPage() {
 
         {/* OAuth Buttons */}
         <div className="space-y-2 sm:space-y-3">
-          <button className="w-full flex items-center justify-center gap-2 border border-gray-200 rounded-lg py-2 sm:py-2.5 text-sm hover:bg-gray-50 transition cursor-pointer">
+          <a href="/auth/login_via_google" className="w-full flex items-center justify-center gap-2 border border-gray-200 rounded-lg py-2 sm:py-2.5 text-sm hover:bg-gray-50 transition cursor-pointer">
             <svg width="16" height="16" viewBox="0 0 24 24">
               <path fill="#EA4335" d="M12 10.2v3.6h5.1c-.2 1.2-1.4 3.5-5.1 3.5-3.1 0-5.6-2.6-5.6-5.8s2.5-5.8 5.6-5.8c1.8 0 3 .8 3.7 1.4l2.5-2.4C16.9 3.2 14.7 2.3 12 2.3 6.9 2.3 2.8 6.5 2.8 11.5S6.9 20.7 12 20.7c6.9 0 9.2-4.8 9.2-7.3 0-.5 0-.8-.1-1.2H12z" />
             </svg>
             Continue with Google
-          </button>
+          </a>
 
           <button className="w-full flex items-center justify-center gap-2 border border-gray-200 rounded-lg py-2 sm:py-2.5 text-sm hover:bg-gray-50 transition cursor-pointer">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
