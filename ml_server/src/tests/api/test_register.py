@@ -129,7 +129,7 @@ async def test_verify_email_activates_user(client, db_session):
 
     response = await client.get(VERIFY_URL, params={"token": verification.token})
 
-    assert response.status_code == 307 # redirect to login page
+    assert response.status_code == 307  # redirect to login page
     await db_session.refresh(user)
     assert user.is_active is True
     assert user.activated_at is not None

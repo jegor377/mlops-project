@@ -146,7 +146,7 @@ async def test_reset_password_updates_hash_and_deletes_token(client, db_session)
     )
 
     assert response.status_code == 200
-    
+
     await db_session.refresh(user)
     stmt = select(UserAuthMethod).where(
         UserAuthMethod.user_id == user.id,
