@@ -346,7 +346,7 @@ async def auth_google(
 ):
     redirect_uri = settings.hostname
     redirect_uri += req.app.url_path_for("google_callback")
-    
+
     oauth = req.app.state.oauth
     return await oauth.google.authorize_redirect(req, redirect_uri=redirect_uri)
 
@@ -365,7 +365,7 @@ async def google_callback(
         login_uri += FrontendURLs.LOGIN
         login_uri += "?" + urlencode({"error": "google_login_cancelled"})
         return RedirectResponse(url=login_uri)
-    
+
     oauth = req.app.state.oauth
     oauth_token = await oauth.google.authorize_access_token(req)
     user_info = oauth_token.get("userinfo") or {}
