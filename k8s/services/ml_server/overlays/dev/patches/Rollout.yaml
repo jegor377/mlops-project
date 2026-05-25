@@ -40,39 +40,24 @@
   path: /spec/template/spec/containers/0/env/-
   value:
     name: HOSTNAME
-    value: ml-server-dev
+    value: http://ml-server-dev
 - op: add
   path: /spec/template/spec/containers/0/env/-
   value:
-    name: SMTP_HOST
+    name: FRONTEND_HOSTNAME
+    value: http://ml-server-dev
+- op: add
+  path: /spec/template/spec/containers/0/env/-
+  value:
+    name: SMTP__HOST
     value: mailpit
 - op: add
   path: /spec/template/spec/containers/0/env/-
   value:
-    name: SMTP_PORT
-    value: "1025"
-- op: add
-  path: /spec/template/spec/containers/0/env/-
-  value:
-    name: SMTP_USE_CREDENTIALS
-    value: "false"
-- op: add
-  path: /spec/template/spec/containers/0/env/-
-  value:
-    name: SMTP_VALIDATE_CERTS
-    value: "false"
-- op: add
-  path: /spec/template/spec/containers/0/env/-
-  value:
-    name: SMTP_FROM
+    name: SMTP__FROM_EMAIL_ADDRESS
     value: no-reply@example.com
 - op: add
   path: /spec/template/spec/containers/0/env/-
   value:
-    name: SMTP_STARTTLS
-    value: "false"
-- op: add
-  path: /spec/template/spec/containers/0/env/-
-  value:
-    name: SMTP_SSL_TLS
-    value: "false"
+    name: GOOGLE_OAUTH2_CREDS__CLIENT_ID
+    value: 103419354438-hgqip1ac5oibmo0vtq68d53japlj409g.apps.googleusercontent.com

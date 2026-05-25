@@ -13,6 +13,7 @@ tasks:
       HOSTNAME: localhost
       DB_URI: "postgresql://postgres:postgres@127.0.0.1:8081/test_db"
       LOAD_MODEL: true
+      OAUTH_STATE_SESSION_SECRET_KEY: dummy-secret-key
       SMTP__FROM_EMAIL_ADDRESS: no-reply@example.com
       GOOGLE_OAUTH2_CREDS__CLIENT_ID: dummy-client-id
       GOOGLE_OAUTH2_CREDS__CLIENT_SECRET: dummy-client-secret
