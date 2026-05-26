@@ -24,7 +24,7 @@
       image: igorsantarek/ml_server:latest
       command: ["/app/.venv/bin/alembic", "upgrade", "head"]
       env:
-        - name: DATABASE_URL
+        - name: DB_URI
           valueFrom:
             secretKeyRef:
               name: cnpg-cluster-app
@@ -40,12 +40,12 @@
   path: /spec/template/spec/containers/0/env/-
   value:
     name: HOSTNAME
-    value: http://ml-server-dev
+    value: http://ml-server-dev.com
 - op: add
   path: /spec/template/spec/containers/0/env/-
   value:
     name: FRONTEND_HOSTNAME
-    value: http://ml-server-dev
+    value: http://ml-server-dev.com
 - op: add
   path: /spec/template/spec/containers/0/env/-
   value:

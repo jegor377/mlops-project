@@ -6,7 +6,7 @@ spec:
   parentRefs:
   - name: frontend-gw
   hostnames:
-  - ml-server-production
+  - ml-server-production.com
   rules:
   - matches:
       - path:

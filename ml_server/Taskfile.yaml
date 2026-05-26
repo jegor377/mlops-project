@@ -89,7 +89,6 @@ tasks:
   upgrade-db:
     desc: "Upgrade the database to the latest version"
     cmds:
-      - echo $DB_URI
       - uv run alembic upgrade head
   new-migration:
     desc: "Create a new alembic migration"
