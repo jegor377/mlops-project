@@ -14,6 +14,7 @@ export default function LoginPage() {
   const justRegistered = searchParams.get("registered") === "true";
   const justActivated = searchParams.get("just-activated") === "true";
   const googleCancelled = searchParams.get("error") === "google_login_cancelled";
+  const oauthLoginError = searchParams.get("login-error");
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
@@ -101,6 +102,18 @@ export default function LoginPage() {
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
             {error}
+          </div>
+        )}
+      
+        {/* Login error banner */}
+        {(oauthLoginError && !error) && (
+          <div className="mb-4 px-3 py-2.5 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-sm text-red-700">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            {oauthLoginError}
           </div>
         )}
 

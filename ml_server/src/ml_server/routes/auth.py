@@ -387,6 +387,9 @@ async def google_callback(
     )
     result = await session.execute(stmt)
     user = result.scalar_one_or_none()
+    
+    redirect_uri = settings.frontend_hostname
+    redirect_uri += FrontendURLs.LOGIN
 
     async def flush():
         try:
@@ -394,11 +397,15 @@ async def google_callback(
         except IntegrityError as e:
             logger.error(f"IntegrityError during registration: {e.orig}")
             await session.rollback()
-            raise HTTPException(status_code=409, detail="Registration failed")
+            redirect_uri += "?" + urlencode({"login-error": "Login failed"})
+            response = RedirectResponse(url=redirect_uri)
+            return response
         except Exception as e:
             await session.rollback()
             logger.error(f"Unexpected error creating user: {e}")
-            raise HTTPException(status_code=500, detail="Internal server error")
+            redirect_uri += "?" + urlencode({"login-error": "Internal server error"})
+            response = RedirectResponse(url=redirect_uri)
+            return response
 
     # Check if user exists and if not then create it and activate
     if not user:
@@ -441,7 +448,9 @@ async def google_callback(
             await flush()
 
     if user.deactivated_at is not None:
-        raise HTTPException(status_code=401, detail="Invalid credentials.")
+        redirect_uri += "?" + urlencode({"login-error": "Login failed"})
+        response = RedirectResponse(url=redirect_uri)
+        return response
 
     await session.commit()
 
