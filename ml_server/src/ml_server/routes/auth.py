@@ -375,8 +375,17 @@ async def google_callback(
     email = user_info.get("email")
     email_verified = user_info.get("email_verified", False)
 
+    redirect_uri = settings.frontend_hostname
+    redirect_uri += FrontendURLs.LOGIN
+
     if not sub or not email or not email_verified:
-        raise HTTPException(status_code=400, detail="Incomplete profile from Google.")
+        error_redirect_uri = (
+            redirect_uri
+            + "?"
+            + urlencode({"login-error": "Incomplete profile from Google"})
+        )
+        response = RedirectResponse(url=error_redirect_uri)
+        return response
 
     normalized_email = email.lower().strip()
 
@@ -387,9 +396,6 @@ async def google_callback(
     )
     result = await session.execute(stmt)
     user = result.scalar_one_or_none()
-
-    redirect_uri = settings.frontend_hostname
-    redirect_uri += FrontendURLs.LOGIN
 
     async def flush():
         try:
