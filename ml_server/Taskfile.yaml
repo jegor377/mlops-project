@@ -11,6 +11,7 @@ tasks:
     env:
       ENV: development
       HOSTNAME: localhost
+      FRONTEND_HOSTNAME: localhost
       DB_URI: "postgresql://postgres:postgres@127.0.0.1:8081/test_db"
       LOAD_MODEL: true
       OAUTH_STATE_SESSION_SECRET_KEY: dummy-secret-key
