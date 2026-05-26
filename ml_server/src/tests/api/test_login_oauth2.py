@@ -80,27 +80,60 @@ async def test_google_callback_links_existing_classic_account(client, app, db_se
     assert result.scalar_one_or_none() is not None
 
 
-async def test_google_callback_missing_sub_returns_400(client, app, db_session):
+async def test_google_callback_missing_sub_redirects_with_error(
+    client,
+    app,
+    db_session,
+):
     app.state.oauth = _mock_oauth({**GOOGLE_USER_INFO, "sub": None})
-    response = await client.get(GOOGLE_CALLBACK_URL)
-    assert response.status_code == 400
+
+    response = await client.get(
+        GOOGLE_CALLBACK_URL,
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 307
+    assert "login-error=Incomplete+profile+from+Google" in response.headers["location"]
 
 
-async def test_google_callback_unverified_email_returns_400(client, app, db_session):
-    app.state.oauth = _mock_oauth({**GOOGLE_USER_INFO, "email_verified": False})
-    response = await client.get(GOOGLE_CALLBACK_URL)
-    assert response.status_code == 400
+async def test_google_callback_unverified_email_redirects_with_error(
+    client,
+    app,
+    db_session,
+):
+    app.state.oauth = _mock_oauth(
+        {**GOOGLE_USER_INFO, "email_verified": False}
+    )
+
+    response = await client.get(
+        GOOGLE_CALLBACK_URL,
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 307
+    assert "login-error=Incomplete+profile+from+Google" in response.headers["location"]
 
 
-async def test_google_callback_deactivated_user_returns_401(client, app, db_session):
+async def test_google_callback_deactivated_user_redirects_with_error(
+    client,
+    app,
+    db_session,
+):
     user = await make_classic_user(
         db_session,
         email=GOOGLE_USER_INFO["email"]
     )
+
     user.deactivated_at = datetime.now(timezone.utc)
+
     await db_session.commit()
 
     app.state.oauth = _mock_oauth(GOOGLE_USER_INFO)
-    response = await client.get(GOOGLE_CALLBACK_URL)
 
-    assert response.status_code == 401
+    response = await client.get(
+        GOOGLE_CALLBACK_URL,
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 307
+    assert "login-error=Login+failed" in response.headers["location"]
