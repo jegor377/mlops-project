@@ -387,7 +387,7 @@ async def google_callback(
     )
     result = await session.execute(stmt)
     user = result.scalar_one_or_none()
-    
+
     redirect_uri = settings.frontend_hostname
     redirect_uri += FrontendURLs.LOGIN
 
@@ -397,14 +397,22 @@ async def google_callback(
         except IntegrityError as e:
             logger.error(f"IntegrityError during registration: {e.orig}")
             await session.rollback()
-            redirect_uri += "?" + urlencode({"login-error": "Login failed"})
-            response = RedirectResponse(url=redirect_uri)
+            error_redirect_uri = (
+                redirect_uri
+                + "?"
+                + urlencode({"login-error": "Login failed"})
+            )
+            response = RedirectResponse(url=error_redirect_uri)
             return response
         except Exception as e:
             await session.rollback()
             logger.error(f"Unexpected error creating user: {e}")
-            redirect_uri += "?" + urlencode({"login-error": "Internal server error"})
-            response = RedirectResponse(url=redirect_uri)
+            error_redirect_uri = (
+                redirect_uri
+                + "?"
+                + urlencode({"login-error": "Internal server error"})
+            )
+            response = RedirectResponse(url=error_redirect_uri)
             return response
 
     # Check if user exists and if not then create it and activate
