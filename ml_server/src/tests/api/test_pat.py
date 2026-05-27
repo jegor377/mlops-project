@@ -3,7 +3,7 @@ import hashlib
 from sqlalchemy import select
 from unittest.mock import AsyncMock, patch, ANY
 
-from src.tests.conftest import make_user, make_pat, make_session
+from src.tests.conftest import make_classic_user, make_pat, make_session
 from src.ml_server.models.pat import PersonalAccessToken
 
 
@@ -24,7 +24,7 @@ VALID_BODY = {
 
 
 async def test_create_pat_returns_201_and_raw_token(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     us = await make_session(db_session, user)
     client.cookies.set("session", us.token)
 
@@ -46,7 +46,7 @@ async def test_create_pat_returns_201_and_raw_token(client, db_session):
 
 
 async def test_create_pat_raw_token_not_stored_plaintext(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     us = await make_session(db_session, user)
     client.cookies.set("session", us.token)
 
@@ -66,7 +66,7 @@ async def test_create_pat_raw_token_not_stored_plaintext(client, db_session):
 
 
 async def test_create_pat_persists_in_db(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     us = await make_session(db_session, user)
     client.cookies.set("session", us.token)
 
@@ -88,7 +88,7 @@ async def test_create_pat_persists_in_db(client, db_session):
 
 
 async def test_create_pat_with_no_expiry(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     us = await make_session(db_session, user)
     client.cookies.set("session", us.token)
 
@@ -106,7 +106,7 @@ async def test_create_pat_with_no_expiry(client, db_session):
 
 
 async def test_create_pat_invalid_scope_returns_422(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     us = await make_session(db_session, user)
     client.cookies.set("session", us.token)
 
@@ -122,7 +122,7 @@ async def test_create_pat_invalid_scope_returns_422(client, db_session):
 
 
 async def test_create_pat_empty_scopes_returns_422(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     us = await make_session(db_session, user)
     client.cookies.set("session", us.token)
 
@@ -138,7 +138,7 @@ async def test_create_pat_empty_scopes_returns_422(client, db_session):
 
 
 async def test_create_pat_empty_name_returns_422(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     us = await make_session(db_session, user)
     client.cookies.set("session", us.token)
 
@@ -164,7 +164,7 @@ async def test_create_pat_unauthenticated_returns_401(client, db_session):
 
 
 async def test_create_pat_expired_session_returns_401(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     us = await make_session(db_session, user, expired=True)
     client.cookies.set("session", us.token)
 
@@ -178,7 +178,7 @@ async def test_create_pat_expired_session_returns_401(client, db_session):
 
 
 async def test_create_pat_prefix_is_correct_length(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     us = await make_session(db_session, user)
     client.cookies.set("session", us.token)
 
@@ -194,7 +194,7 @@ async def test_create_pat_prefix_is_correct_length(client, db_session):
 
 
 async def test_create_pat_scopes_deduplicated(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     us = await make_session(db_session, user)
     client.cookies.set("session", us.token)
 
@@ -211,12 +211,12 @@ async def test_create_pat_scopes_deduplicated(client, db_session):
     mock_send.assert_awaited_once_with(user.email, data["name"], ANY, ANY, ANY, ANY)
 
 
-async def test_create_pat_exceeding_limit_returns_400(client, db_session, app):
-    user = await make_user(db_session)
+async def test_create_pat_exceeding_limit_returns_400(client, db_session, app, test_settings):
+    user = await make_classic_user(db_session)
     us = await make_session(db_session, user)
     client.cookies.set("session", us.token)
     # Create max allowed tokens
-    for i in range(app.state.settings.pat_count_limit):
+    for i in range(test_settings.pat_count_limit):
         await make_pat(db_session, user, name=f"Token {i+1}")
 
     # Now attempt to create one more, which should fail
@@ -235,8 +235,8 @@ async def test_create_pat_exceeding_limit_returns_400(client, db_session, app):
 
 
 async def test_list_pats_returns_only_own_tokens(client, db_session):
-    user1 = await make_user(db_session, "user1@example.com")
-    user2 = await make_user(db_session, "user2@example.com")
+    user1 = await make_classic_user(db_session, "user1@example.com")
+    user2 = await make_classic_user(db_session, "user2@example.com")
     us1 = await make_session(db_session, user1)
 
     await make_pat(db_session, user1, name="Token A")
@@ -254,7 +254,7 @@ async def test_list_pats_returns_only_own_tokens(client, db_session):
 
 
 async def test_list_pats_empty_for_new_user(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     us = await make_session(db_session, user)
     client.cookies.set("session", us.token)
 
@@ -269,7 +269,7 @@ async def test_list_pats_empty_for_new_user(client, db_session):
 
 
 async def test_list_pats_includes_inactive_tokens(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     us = await make_session(db_session, user)
     await make_pat(db_session, user, name="Revoked", is_active=False, is_revoked=True)
     client.cookies.set("session", us.token)
@@ -287,7 +287,7 @@ async def test_list_pats_unauthenticated_returns_401(client, db_session):
 
 
 async def test_list_pats_no_raw_token_in_response(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     us = await make_session(db_session, user)
     await make_pat(db_session, user)
     client.cookies.set("session", us.token)
@@ -301,7 +301,7 @@ async def test_list_pats_no_raw_token_in_response(client, db_session):
 
 
 async def test_list_pats_pagination(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     us = await make_session(db_session, user)
 
     # Create 25 tokens
@@ -322,7 +322,7 @@ async def test_list_pats_pagination(client, db_session):
 
 
 async def test_list_pats_invalid_page_size_returns_422(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     us = await make_session(db_session, user)
     client.cookies.set("session", us.token)
 
@@ -334,7 +334,7 @@ async def test_list_pats_invalid_page_size_returns_422(client, db_session):
 
 
 async def test_list_pats_status_filter(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     us = await make_session(db_session, user)
 
     await make_pat(db_session, user, name="Active Token")
@@ -372,7 +372,7 @@ async def test_list_pats_status_filter(client, db_session):
 
 
 async def test_stats_endpoint_returns_correct_counts(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     us = await make_session(db_session, user)
 
     # Create tokens with different statuses
@@ -394,7 +394,7 @@ async def test_stats_endpoint_returns_correct_counts(client, db_session):
 
 
 async def test_revoke_pat_returns_200(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     us = await make_session(db_session, user)
     pat, _ = await make_pat(db_session, user)
     client.cookies.set("session", us.token)
@@ -410,7 +410,7 @@ async def test_revoke_pat_returns_200(client, db_session):
 
 
 async def test_revoke_pat_sets_is_active_false(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     us = await make_session(db_session, user)
     pat, _ = await make_pat(db_session, user)
     client.cookies.set("session", us.token)
@@ -426,7 +426,7 @@ async def test_revoke_pat_sets_is_active_false(client, db_session):
 
 
 async def test_revoke_pat_not_found_returns_404(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     us = await make_session(db_session, user)
     client.cookies.set("session", us.token)
 
@@ -442,8 +442,8 @@ async def test_revoke_pat_not_found_returns_404(client, db_session):
 
 async def test_revoke_pat_other_user_returns_404(client, db_session):
     """User cannot revoke another user's token."""
-    user1 = await make_user(db_session, "u1@example.com")
-    user2 = await make_user(db_session, "u2@example.com")
+    user1 = await make_classic_user(db_session, "u1@example.com")
+    user2 = await make_classic_user(db_session, "u2@example.com")
     us2 = await make_session(db_session, user2)
     pat, _ = await make_pat(db_session, user1)  # belongs to user1
     client.cookies.set("session", us2.token)
@@ -462,7 +462,7 @@ async def test_revoke_pat_other_user_returns_404(client, db_session):
 
 
 async def test_revoke_already_revoked_returns_409(client, db_session):
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     us = await make_session(db_session, user)
     pat, _ = await make_pat(db_session, user, is_active=False)
     client.cookies.set("session", us.token)

@@ -4,4 +4,4 @@ metadata:
   name: ml-server-route
 spec:
   hostnames:
-  - ml-server-dev
+  - ml-server-dev.com

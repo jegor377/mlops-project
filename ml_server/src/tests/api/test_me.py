@@ -1,4 +1,4 @@
-from src.tests.conftest import make_user, make_session
+from src.tests.conftest import make_classic_user, make_session
 
 
 ME_URL = "/auth/me"
@@ -8,7 +8,7 @@ ME_URL = "/auth/me"
 
 async def test_me_returns_user_data_for_valid_session(client, db_session):
     """Happy path: valid token returns 200 and user info."""
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     user_session = await make_session(db_session, user)
     client.cookies.set("session", user_session.token)
 
@@ -30,7 +30,7 @@ async def test_me_no_cookie_returns_401(client, db_session):
 
 async def test_me_expired_session_returns_401(client, db_session):
     """Fails if the session exists in DB but has expired."""
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     user_session = await make_session(db_session, user, expired=True)
     client.cookies.set("session", user_session.token)
 
@@ -52,7 +52,7 @@ async def test_me_invalid_token_returns_401(client, db_session):
 
 async def test_me_user_deleted_returns_401(client, db_session):
     """Edge case: session exists but the associated user was deleted."""
-    user = await make_user(db_session)
+    user = await make_classic_user(db_session)
     user_session = await make_session(db_session, user)
     client.cookies.set("session", user_session.token)
 

@@ -1,4 +1,5 @@
 import pytest_asyncio
+import pytest
 import bcrypt
 import secrets
 import hashlib
@@ -11,29 +12,34 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.ml_server.conf.settings import Settings
 from src.ml_server.app import create_app
 from src.ml_server.dependencies.db import get_session
+from src.ml_server.dependencies.settings import get_settings
 from src.ml_server.models.base import Base
 from src.ml_server.models import *  # noqa: F401, F403
 from src.ml_server.models.pat import PersonalAccessToken
 from src.ml_server.models.user import User
+from src.ml_server.models.user_auth_method import UserAuthMethod, AuthProvider
 from src.ml_server.models.user_session import UserSession
 
-
-test_settings = Settings()
 
 LOGIN_PAYLOAD = {"email": "test@example.com", "password": "testpassword"}
 
 
+@pytest.fixture
+def test_settings():
+    return Settings()
+
+
 @pytest_asyncio.fixture()
-async def app():
+async def app(test_settings):
     app = create_app(test_settings)
     async with LifespanManager(app):
         yield app
 
 
 @pytest_asyncio.fixture()
-async def engine():
+async def engine(test_settings):
     eng = create_async_engine(
-        test_settings.db_uri,
+        test_settings.async_db_uri,
         pool_size=test_settings.pool_size,
         max_overflow=test_settings.max_overflow,
     )
@@ -48,21 +54,24 @@ async def engine():
 @pytest_asyncio.fixture
 async def db_session(engine):
     async with engine.connect() as conn:
-        trans = await conn.begin()
-        session_factory = async_sessionmaker(bind=conn, expire_on_commit=False)
-        async with session_factory() as session:
-            try:
+        async with conn.begin():
+            async_session = async_sessionmaker(bind=conn, expire_on_commit=False)
+
+            async with async_session() as session:
                 yield session
-            finally:
-                await trans.rollback()
+                await session.rollback()
 
 
 @pytest_asyncio.fixture
-async def client(app, db_session):
+async def client(app, db_session, test_settings):
     async def override_get_session():
         yield db_session
 
+    def override_get_settings():
+        return test_settings
+
     app.dependency_overrides[get_session] = override_get_session
+    app.dependency_overrides[get_settings] = override_get_settings
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
     ) as c:
@@ -70,10 +79,20 @@ async def client(app, db_session):
     app.dependency_overrides.pop(get_session, None)
 
 
-async def make_user(session: AsyncSession, email: str = LOGIN_PAYLOAD["email"], is_active: bool = True) -> User:
+async def make_classic_user(session: AsyncSession, email: str = LOGIN_PAYLOAD["email"], is_active: bool = True) -> User:
     pw_hash = bcrypt.hashpw(LOGIN_PAYLOAD["password"].encode(), bcrypt.gensalt()).decode()
-    user = User(email=email, password_hash=pw_hash, is_active=is_active)
+    user = User(
+        email=email,
+        is_active=is_active
+    )
+    auth_method = UserAuthMethod(
+        user=user,
+        provider=AuthProvider.CLASSIC,
+        provider_user_id=email,
+        password_hash=pw_hash,
+    )
     session.add(user)
+    session.add(auth_method)
     await session.commit()
     await session.refresh(user)
     return user

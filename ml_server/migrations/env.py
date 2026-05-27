@@ -36,7 +36,7 @@ import os
 
 
 def get_url():
-    res = os.environ.get("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
+    res = os.environ.get("DB_URI") or config.get_main_option("sqlalchemy.url")
     return res.replace("postgresql://", "postgresql+asyncpg://", 1)
 
 

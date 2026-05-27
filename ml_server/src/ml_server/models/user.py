@@ -1,8 +1,16 @@
+from __future__ import annotations
 from datetime import datetime
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import String, Boolean, DateTime, func, text
 
 from src.ml_server.models.base import Base
+
+# make linter be quiet
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.ml_server.models.user_auth_method import UserAuthMethod
 
 
 class User(Base):
@@ -10,7 +18,10 @@ class User(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(254), unique=True, nullable=False)
-    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    auth_methods: Mapped[list["UserAuthMethod"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
     is_active: Mapped[bool] = mapped_column(
         Boolean, server_default=text("false"), nullable=False

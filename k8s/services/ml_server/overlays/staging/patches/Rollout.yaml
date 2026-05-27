@@ -3,3 +3,18 @@
   value:
     name: ENV
     value: staging
+- op: add
+  path: /spec/template/spec/containers/0/env/-
+  value:
+    name: HOSTNAME
+    value: http://ml-server-staging.com
+- op: add
+  path: /spec/template/spec/containers/0/env/-
+  value:
+    name: FRONTEND_HOSTNAME
+    value: http://ml-server-staging.com
+- op: add
+  path: /spec/template/spec/containers/0/env/-
+  value:
+    name: GOOGLE_OAUTH2_CREDS__CLIENT_ID
+    value: 103419354438-hgqip1ac5oibmo0vtq68d53japlj409g.apps.googleusercontent.com

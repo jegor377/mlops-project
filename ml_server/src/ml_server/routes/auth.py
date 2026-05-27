@@ -3,42 +3,62 @@ import secrets
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
+from fastapi.responses import RedirectResponse
 from typing import Annotated
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 
+from src.ml_server.conf.settings import Settings
 from src.ml_server.models.user import User
+from src.ml_server.models.user_auth_method import UserAuthMethod, AuthProvider
 from src.ml_server.models.email_verification import EmailVerification
-from src.ml_server.models.user_session import UserSession
 from src.ml_server.models.password_reset import PasswordReset
 
 from src.ml_server.schemas.user import UserCreate, UserLogin, ForgotPassword, ResetPassword
 
+from src.ml_server.dependencies.settings import get_settings
 from src.ml_server.dependencies.db import get_session
 from src.ml_server.dependencies.current_user import get_current_user
 
 from src.ml_server.services.email import send_verification_email, send_password_reset_email
+from src.ml_server.services.session import (
+    issue_session_token,
+    set_session_cookie,
+    invalidate_session_by_user_id,
+    invalidate_session_by_session_token
+)
+
+from src.ml_server.utils.frontend_urls import FrontendURLs
 
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+PASSWORD_ACTION_TOKEN_LEN = 32
 
 
 @router.post("/auth/register", status_code=201)
 async def register(
     request: UserCreate,
     session: Annotated[AsyncSession, Depends(get_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
     req: Request,
 ):
+    normalized_email = request.email.lower().strip()
     password_hash = bcrypt.hashpw(request.password.encode("utf-8"), bcrypt.gensalt())
     new_user = User(
-        email=request.email,
-        password_hash=password_hash.decode("utf-8"),
+        email=normalized_email,
         is_active=False,
     )
+    new_auth_method = UserAuthMethod(
+        provider=AuthProvider.CLASSIC,
+        provider_user_id=normalized_email,
+        password_hash=password_hash.decode("utf-8"),
+    )
+    new_user.auth_methods.append(new_auth_method)
     session.add(new_user)
 
     try:
@@ -52,9 +72,9 @@ async def register(
         logger.error(f"Unexpected error creating user: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-    token = secrets.token_urlsafe(32)
+    token = secrets.token_urlsafe(PASSWORD_ACTION_TOKEN_LEN)
     expires_at = datetime.now(timezone.utc) + timedelta(
-        hours=req.app.state.settings.email_verification_expire_hours
+        hours=settings.email_verification_expire_hours
     )
     verification = EmailVerification(
         user_id=new_user.id,
@@ -72,14 +92,14 @@ async def register(
         raise HTTPException(status_code=500, detail="Internal server error")
 
     try:
-        token_url = req.app.state.settings.hostname
+        token_url = settings.hostname
         token_url += req.app.url_path_for("verify_email")
         token_url += "?" + urlencode({"token": token})
 
         await send_verification_email(
             new_user.email,
             token_url,
-            req.app.state.settings,
+            settings,
         )
     except Exception as e:
         # User and token are persisted — they can be resent later.
@@ -94,6 +114,7 @@ async def register(
 async def verify_email(
     token: Annotated[str, Query()],
     session: Annotated[AsyncSession, Depends(get_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
 ):
     result = await session.execute(
         select(EmailVerification).where(EmailVerification.token == token)
@@ -130,65 +151,64 @@ async def verify_email(
         logger.error(f"Failed to activate user {verification.user_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-    return {"detail": "Email verified. Your account is now active."}
+    login_uri = settings.frontend_hostname
+    login_uri += FrontendURLs.LOGIN
+    login_uri += "?" + urlencode({"just-activated": "true"})
+
+    return RedirectResponse(url=login_uri)
 
 
 @router.post("/auth/login", status_code=200)
 async def login(
     request: UserLogin,
     session: Annotated[AsyncSession, Depends(get_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
     req: Request,
 ):
-    result = await session.execute(select(User).where(User.email == request.email))
-    user = result.scalar_one_or_none()
+    normalized_email = request.email.lower().strip()
+    stmt = (
+        select(UserAuthMethod)
+        .options(selectinload(UserAuthMethod.user))
+        .where(
+            UserAuthMethod.provider == AuthProvider.CLASSIC,
+            UserAuthMethod.provider_user_id == normalized_email,
+        )
+    )
+    result = await session.execute(stmt)
+    auth_method = result.scalar_one_or_none()
 
     # Constant-time check even if user doesn't exist (prevent user enumeration)
     dummy_hash = "$2b$12$xHAznIgwigxdRMy6SN5KY.KrVqPfhKAxI7O6B.h28oAxffCGkJpLO"
-    password_to_check = user.password_hash if user else dummy_hash
+    password_to_check = (
+        auth_method.password_hash
+        if auth_method and auth_method.password_hash
+        else dummy_hash
+    )
 
     password_valid = bcrypt.checkpw(
         request.password.encode("utf-8"),
         password_to_check.encode("utf-8"),
     )
 
-    if not user or not password_valid:
+    if (not auth_method) or (not password_valid) or (auth_method.user.deactivated_at is not None):
         raise HTTPException(status_code=401, detail="Invalid credentials.")
 
-    if not user.is_active:
-        raise HTTPException(
-            status_code=403,
-            detail="Account not yet activated. Please verify your email.",
-        )
+    # Invalidate existing session
+    await invalidate_session_by_user_id(
+        session,
+        auth_method.user.id
+    )
 
     # Issue session token
-    token = secrets.token_urlsafe(32)
-    expires_at = datetime.now(timezone.utc) + timedelta(
-        hours=req.app.state.settings.session_expire_hours
+    token, expires_at = await issue_session_token(
+        session,
+        settings.session_expire_hours,
+        auth_method.user.id,
+        req.app.state.logger
     )
-    session_record = UserSession(
-        user_id=user.id,
-        token=token,
-        expires_at=expires_at,
-    )
-    session.add(session_record)
 
-    try:
-        await session.commit()
-    except Exception as e:
-        await session.rollback()
-        logger.error(f"Failed to persist session for user {user.id}: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
-
-    secure = req.app.state.settings.env != "development"
     response = Response(status_code=200)
-    response.set_cookie(
-        key="session",
-        value=token,
-        httponly=True,
-        secure=secure,
-        samesite="lax",
-        expires=int(expires_at.timestamp()),
-    )
+    set_session_cookie(response, settings, token, expires_at)
     return response
 
 
@@ -196,28 +216,38 @@ async def login(
 async def forgot_password(
     request: ForgotPassword,
     session: Annotated[AsyncSession, Depends(get_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
     req: Request,
 ):
-    result = await session.execute(select(User).where(User.email == request.email))
-    user = result.scalar_one_or_none()
+    normalized_email = request.email.lower().strip()
+    stmt = (
+        select(UserAuthMethod)
+        .options(selectinload(UserAuthMethod.user))
+        .where(
+            UserAuthMethod.provider == AuthProvider.CLASSIC,
+            UserAuthMethod.provider_user_id == normalized_email,
+        )
+    )
+    result = await session.execute(stmt)
+    auth_method = result.scalar_one_or_none()
 
     # Always return 200 — never reveal whether the email exists
-    if user is None or not user.is_active:
+    if auth_method is None or not auth_method.user.is_active:
         return Response(status_code=200)
 
     # Invalidate any existing reset tokens for this user
     existing = await session.execute(
-        select(PasswordReset).where(PasswordReset.user_id == user.id)
+        select(PasswordReset).where(PasswordReset.user_id == auth_method.user_id)
     )
     for record in existing.scalars().all():
         await session.delete(record)
 
-    token = secrets.token_urlsafe(32)
+    token = secrets.token_urlsafe(PASSWORD_ACTION_TOKEN_LEN)
     expires_at = datetime.now(timezone.utc) + timedelta(
-        hours=req.app.state.settings.password_reset_expire_hours
+        hours=settings.password_reset_expire_hours
     )
     reset = PasswordReset(
-        user_id=user.id,
+        user_id=auth_method.user_id,
         token=token,
         expires_at=expires_at,
     )
@@ -227,21 +257,21 @@ async def forgot_password(
         await session.commit()
     except Exception as e:
         await session.rollback()
-        logger.error(f"Failed to persist password reset token for user {user.id}: {e}")
+        logger.error(f"Failed to persist password reset token for user {auth_method.user_id}: {e}")
         return Response(status_code=200)  # Still don't leak anything
 
     try:
-        token_url = req.app.state.settings.hostname
-        token_url += "/reset-password"
+        token_url = settings.hostname
+        token_url += req.app.url_path_for("reset_password")
         token_url += "?" + urlencode({"token": token})
 
         await send_password_reset_email(
-            user.email,
+            auth_method.user.email,
             token_url,
-            req.app.state.settings,
+            settings,
         )
     except Exception as e:
-        logger.error(f"Failed to send password reset email to {user.email}: {e}")
+        logger.error(f"Failed to send password reset email to {auth_method.user.email}: {e}")
 
     return Response(status_code=200)
 
@@ -262,20 +292,28 @@ async def reset_password(
             await session.commit()
         raise HTTPException(status_code=400, detail="Invalid or expired reset link.")
 
-    result = await session.execute(select(User).where(User.id == reset.user_id))
-    user = result.scalar_one_or_none()
-    if user is None:
+    stmt = (
+        select(UserAuthMethod)
+        .options(selectinload(UserAuthMethod.user))
+        .where(
+            UserAuthMethod.provider == AuthProvider.CLASSIC,
+            UserAuthMethod.user_id == reset.user_id,
+        )
+    )
+    result = await session.execute(stmt)
+    auth_method = result.scalar_one_or_none()
+    if auth_method is None:
         raise HTTPException(status_code=400, detail="Invalid or expired reset link.")
 
     password_hash = bcrypt.hashpw(request.new_password.encode("utf-8"), bcrypt.gensalt())
-    user.password_hash = password_hash.decode("utf-8")
+    auth_method.password_hash = password_hash.decode("utf-8")
     await session.delete(reset)
 
     try:
         await session.commit()
     except Exception as e:
         await session.rollback()
-        logger.error(f"Failed to reset password for user {user.id}: {e}")
+        logger.error(f"Failed to reset password for user {auth_method.user_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
     return Response(status_code=200)
@@ -292,11 +330,161 @@ async def me(
 async def logout(request: Request, session: Annotated[AsyncSession, Depends(get_session)]):
     token = request.cookies.get("session")
     if token:
-        result = await session.execute(select(UserSession).where(UserSession.token == token))
-        user_session = result.scalar_one_or_none()
-        if user_session:
-            await session.delete(user_session)
-            await session.commit()
+        await invalidate_session_by_session_token(
+            session,
+            token
+        )
     response = Response(status_code=200)
     response.delete_cookie("session")
+    return response
+
+
+@router.get("/auth/login_via_google")
+async def auth_google(
+    req: Request,
+    settings: Annotated[Settings, Depends(get_settings)]
+):
+    redirect_uri = settings.hostname
+    redirect_uri += req.app.url_path_for("google_callback")
+
+    oauth = req.app.state.oauth
+    return await oauth.google.authorize_redirect(req, redirect_uri=redirect_uri)
+
+
+# Handle the OAuth callback from Google
+@router.get("/auth/login_via_google/callback")
+async def google_callback(
+    req: Request,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    settings: Annotated[Settings, Depends(get_settings)]
+):
+    # User cancelled the Google consent screen
+    error = req.query_params.get("error")
+    if error:
+        login_uri = settings.frontend_hostname
+        login_uri += FrontendURLs.LOGIN
+        login_uri += "?" + urlencode({"error": "google_login_cancelled"})
+        return RedirectResponse(url=login_uri)
+
+    oauth = req.app.state.oauth
+    oauth_token = await oauth.google.authorize_access_token(req)
+    user_info = oauth_token.get("userinfo") or {}
+
+    # Extract user details
+    sub = user_info.get("sub")
+    email = user_info.get("email")
+    email_verified = user_info.get("email_verified", False)
+
+    redirect_uri = settings.frontend_hostname
+    redirect_uri += FrontendURLs.LOGIN
+
+    if not sub or not email or not email_verified:
+        error_redirect_uri = (
+            redirect_uri
+            + "?"
+            + urlencode({"login-error": "Incomplete profile from Google"})
+        )
+        response = RedirectResponse(url=error_redirect_uri)
+        return response
+
+    normalized_email = email.lower().strip()
+
+    # Fetch user from the DB
+    stmt = (
+        select(User)
+        .where(User.email == normalized_email)
+    )
+    result = await session.execute(stmt)
+    user = result.scalar_one_or_none()
+
+    async def flush():
+        try:
+            await session.flush()
+        except IntegrityError as e:
+            logger.error(f"IntegrityError during registration: {e.orig}")
+            await session.rollback()
+            error_redirect_uri = (
+                redirect_uri
+                + "?"
+                + urlencode({"login-error": "Login failed"})
+            )
+            response = RedirectResponse(url=error_redirect_uri)
+            return response
+        except Exception as e:
+            await session.rollback()
+            logger.error(f"Unexpected error creating user: {e}")
+            error_redirect_uri = (
+                redirect_uri
+                + "?"
+                + urlencode({"login-error": "Internal server error"})
+            )
+            response = RedirectResponse(url=error_redirect_uri)
+            return response
+
+    # Check if user exists and if not then create it and activate
+    if not user:
+        user = User(
+            email=normalized_email,
+            is_active=True,
+            activated_at=datetime.now(timezone.utc),
+        )
+
+        new_auth_method = UserAuthMethod(
+            user=user,
+            provider=AuthProvider.GOOGLE,
+            provider_user_id=sub,
+        )
+
+        session.add(user)
+        session.add(new_auth_method)
+        await flush()
+    else:
+        stmt = select(UserAuthMethod).where(
+            UserAuthMethod.user_id == user.id,
+            UserAuthMethod.provider == AuthProvider.GOOGLE,
+            UserAuthMethod.provider_user_id == sub,
+        )
+        result = await session.execute(stmt)
+        auth_method = result.scalar_one_or_none()
+
+        if not auth_method:
+            new_auth_method = UserAuthMethod(
+                user_id=user.id,
+                provider=AuthProvider.GOOGLE,
+                provider_user_id=sub,
+            )
+
+            session.add(new_auth_method)
+
+            user.is_active = True
+            user.activated_at = datetime.now(timezone.utc)
+
+            await flush()
+
+    if user.deactivated_at is not None:
+        redirect_uri += "?" + urlencode({"login-error": "Login failed"})
+        response = RedirectResponse(url=redirect_uri)
+        return response
+
+    await session.commit()
+
+    # Invalidate existing session
+    await invalidate_session_by_user_id(
+        session,
+        user.id
+    )
+
+    # Issue session token
+    session_token, expires_at = await issue_session_token(
+        session,
+        settings.session_expire_hours,
+        user.id,
+        req.app.state.logger
+    )
+
+    redirect_uri = settings.frontend_hostname
+    redirect_uri += FrontendURLs.DASHBOARD
+
+    response = RedirectResponse(url=redirect_uri)
+    set_session_cookie(response, settings, session_token, expires_at)
     return response

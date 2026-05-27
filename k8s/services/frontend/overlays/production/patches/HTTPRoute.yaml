@@ -4,4 +4,4 @@ metadata:
   name: frontend-route
 spec:
   hostnames:
-  - ml-server-production
+  - ml-server-production.com

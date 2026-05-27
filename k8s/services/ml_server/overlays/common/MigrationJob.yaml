@@ -15,7 +15,7 @@ spec:
           image: igorsantarek/ml_server
           command: ["/app/.venv/bin/alembic", "upgrade", "head"]
           env:
-            - name: DATABASE_URL
+            - name: DB_URI
               valueFrom:
                 secretKeyRef:
                   name: cnpg-cluster-app

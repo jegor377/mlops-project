@@ -20,6 +20,17 @@ spec:
           ports:
             - containerPort: 8000
               protocol: TCP
+          volumeMounts:
+            - name: google-oauth2-creds-client-secret
+              mountPath: /run/secrets/google_oauth2_creds__client_secret
+              subPath: data
+              readOnly: true
+            - name: oauth-state-session-secret-key
+              mountPath: /run/secrets/oauth_state_session_secret_key
+              subPath: data
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
           env:
           - name: HF_HOME
             value: /tmp/.cache
@@ -51,9 +62,6 @@ spec:
             allowPrivilegeEscalation: false
             privileged: false
             readOnlyRootFilesystem: true
-          volumeMounts:
-            - name: tmp
-              mountPath: /tmp
       securityContext:
         seccompProfile:
           type: RuntimeDefault
@@ -63,6 +71,12 @@ spec:
       volumes:
         - name: tmp
           emptyDir: {}
+        - name: google-oauth2-creds-client-secret
+          secret:
+            secretName: google-oauth2-creds-client-secret
+        - name: oauth-state-session-secret-key
+          secret:
+            secretName: oauth-state-session-secret-key
   strategy:
     canary: #Indicates that the rollout should use the Canary strategy
       maxSurge: '25%'

@@ -1,6 +1,8 @@
+from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from fastapi import FastAPI
+from authlib.integrations.starlette_client import OAuth
+from starlette.middleware.sessions import SessionMiddleware
 import logging
 
 from src.ml_server.conf.settings import Settings
@@ -10,28 +12,53 @@ from src.ml_server.routes.pat import router as pat_router
 from src.ml_server.services.ml_model import Model
 
 
+def configure_google_oauth(oauth: OAuth, settings: Settings):
+    # Configure OAuth
+    oauth.register(
+        name="google",
+        client_id=settings.google_oauth2_creds.client_id,
+        client_secret=settings.google_oauth2_creds.client_secret,
+        authorize_url="https://accounts.google.com/o/oauth2/auth",
+        authorize_params={"scope": "openid email profile"},
+        access_token_url="https://oauth2.googleapis.com/token",
+        client_kwargs={"scope": "openid email profile"},
+        server_metadata_url="https://accounts.google.com/.well-known/openid-configuration"
+    )
+
+
 def create_app(settings: Settings) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        app.logger = logging.getLogger(__name__)
-        app.state.settings = settings
+        app.state.logger = logging.getLogger(__name__)
         # Load the ML model
         if settings.load_model:
             app.state.model = Model()
         engine = create_async_engine(
-            settings.db_uri,
+            settings.async_db_uri,
             pool_size=settings.pool_size,
             max_overflow=settings.max_overflow,
         )
         app.state.engine = engine
         app.state.db = async_sessionmaker(engine, expire_on_commit=False)
+        oauth = OAuth()
+        configure_google_oauth(oauth, settings)
+        app.state.oauth = oauth
         yield
         # Clean up the ML models and release the resources
-        if app.state.settings.load_model:
+        if settings.load_model:
             del app.state.model
         await engine.dispose()
 
+    is_secure = settings.env != "development"
     app = FastAPI(docs_url="/docs", lifespan=lifespan)
+    app.add_middleware(
+        SessionMiddleware,
+        secret_key=settings.oauth_state_session_secret_key,
+        session_cookie="oauth_state",  # avoid colliding with your auth session cookie
+        max_age=300,  # OAuth state only needs to live for a few minutes
+        https_only=is_secure,
+        same_site="lax",
+    )
     app.include_router(general_router)
     app.include_router(auth_router)
     app.include_router(pat_router)

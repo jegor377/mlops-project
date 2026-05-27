@@ -7,8 +7,10 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, Query
 from sqlalchemy import select, func, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.ml_server.conf.settings import Settings
 from src.ml_server.dependencies.db import get_session
 from src.ml_server.dependencies.current_user import get_current_user
+from src.ml_server.dependencies.settings import get_settings
 from src.ml_server.models.pat import PersonalAccessToken
 from src.ml_server.models.user import User
 from src.ml_server.schemas.pat import (
@@ -20,7 +22,7 @@ from src.ml_server.schemas.pat import (
     PATStatsResponse,
     VALID_SCOPES,
 )
-from src.ml_server.services.pat import _hash_token
+from src.ml_server.services.pat import hash_token
 from src.ml_server.services.email import send_pat_creation_email, send_pat_revocation_email
 
 router = APIRouter()
@@ -35,6 +37,7 @@ async def create_pat(
     request: Request,
     session: Annotated[AsyncSession, Depends(get_session)],
     user: Annotated[User, Depends(get_current_user)],
+    settings: Annotated[Settings, Depends(get_settings)],
 ) -> PATCreateResponse:
     """Create a new PAT. Returns raw token once — store it securely."""
     now = datetime.now(timezone.utc)
@@ -52,11 +55,11 @@ async def create_pat(
         .where(count_condition)
     )
     pat_count = pat_count_result.scalar_one()
-    if pat_count >= request.app.state.settings.pat_count_limit:
+    if pat_count >= settings.pat_count_limit:
         raise HTTPException(
             status_code=400,
             detail=(
-                f"PAT limit reached ({pat_count}/{request.app.state.settings.pat_count_limit}). "
+                f"PAT limit reached ({pat_count}/{settings.pat_count_limit}). "
                 "Please revoke old tokens before creating new ones."
             ),
         )
@@ -73,7 +76,7 @@ async def create_pat(
 
     # Generate token
     raw_token = TOKEN_PREFIX + secrets.token_urlsafe(40)
-    token_hash = _hash_token(raw_token)
+    token_hash = hash_token(raw_token)
     token_prefix = raw_token[:8]  # "vlt_XXXX"
 
     now = datetime.now(timezone.utc)
@@ -109,7 +112,7 @@ async def create_pat(
         pat.scopes.split(","),
         body.expires_in_days,
         pat.expires_at,
-        request.app.state.settings
+        settings
     )
 
     return PATCreateResponse(
@@ -217,6 +220,7 @@ async def revoke_pat(
     request: Request,
     session: Annotated[AsyncSession, Depends(get_session)],
     user: Annotated[User, Depends(get_current_user)],
+    settings: Annotated[Settings, Depends(get_settings)],
 ) -> None:
     """Revoke (soft-delete) a PAT. Only owner can revoke."""
     result = await session.execute(
@@ -243,5 +247,5 @@ async def revoke_pat(
         logger.error(f"Failed to revoke PAT {token_id}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
-    await send_pat_revocation_email(user.email, pat.name, request.app.state.settings)
+    await send_pat_revocation_email(user.email, pat.name, settings)
     return Response(status_code=200)

@@ -4,5 +4,5 @@ metadata:
   name: frontend-route
 spec:
   hostnames:
-  - ml-server-staging
+  - ml-server-staging.com
 

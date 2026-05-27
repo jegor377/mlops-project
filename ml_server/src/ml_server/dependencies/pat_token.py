@@ -5,7 +5,7 @@ from sqlalchemy import select
 from datetime import datetime, timezone
 
 from src.ml_server.models.pat import PersonalAccessToken
-from src.ml_server.services.pat import _hash_token
+from src.ml_server.services.pat import hash_token
 from src.ml_server.dependencies.db import get_session
 
 
@@ -19,7 +19,7 @@ def get_pat(scopes: list[str] | None = None):
             raise HTTPException(status_code=401, detail="Not authenticated")
 
         raw_token = raw_token[len("Bearer "):]
-        token = _hash_token(raw_token)
+        token = hash_token(raw_token)
 
         result = await session.execute(
             select(PersonalAccessToken).where(
