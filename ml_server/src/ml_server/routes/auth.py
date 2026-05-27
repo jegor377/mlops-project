@@ -31,6 +31,7 @@ from src.ml_server.services.session import (
     invalidate_session_by_user_id,
     invalidate_session_by_session_token
 )
+import src.ml_server.services.oauth as oauth_services
 
 from src.ml_server.utils.frontend_urls import FrontendURLs
 
@@ -397,69 +398,24 @@ async def google_callback(
     result = await session.execute(stmt)
     user = result.scalar_one_or_none()
 
-    async def flush():
-        try:
-            await session.flush()
-        except IntegrityError as e:
-            logger.error(f"IntegrityError during registration: {e.orig}")
-            await session.rollback()
-            error_redirect_uri = (
-                redirect_uri
-                + "?"
-                + urlencode({"login-error": "Login failed"})
-            )
-            response = RedirectResponse(url=error_redirect_uri)
-            return response
-        except Exception as e:
-            await session.rollback()
-            logger.error(f"Unexpected error creating user: {e}")
-            error_redirect_uri = (
-                redirect_uri
-                + "?"
-                + urlencode({"login-error": "Internal server error"})
-            )
-            response = RedirectResponse(url=error_redirect_uri)
-            return response
-
     # Check if user exists and if not then create it and activate
     if not user:
-        user = User(
-            email=normalized_email,
-            is_active=True,
-            activated_at=datetime.now(timezone.utc),
+        err, user = await oauth_services.create_active_user(
+            normalized_email,
+            sub,
+            redirect_uri,
+            session
         )
-
-        new_auth_method = UserAuthMethod(
-            user=user,
-            provider=AuthProvider.GOOGLE,
-            provider_user_id=sub,
-        )
-
-        session.add(user)
-        session.add(new_auth_method)
-        await flush()
     else:
-        stmt = select(UserAuthMethod).where(
-            UserAuthMethod.user_id == user.id,
-            UserAuthMethod.provider == AuthProvider.GOOGLE,
-            UserAuthMethod.provider_user_id == sub,
+        err = await oauth_services.try_creating_user_auth_method(
+            user,
+            sub,
+            redirect_uri,
+            session
         )
-        result = await session.execute(stmt)
-        auth_method = result.scalar_one_or_none()
 
-        if not auth_method:
-            new_auth_method = UserAuthMethod(
-                user_id=user.id,
-                provider=AuthProvider.GOOGLE,
-                provider_user_id=sub,
-            )
-
-            session.add(new_auth_method)
-
-            user.is_active = True
-            user.activated_at = datetime.now(timezone.utc)
-
-            await flush()
+    if err:
+        return err
 
     if user.deactivated_at is not None:
         redirect_uri += "?" + urlencode({"login-error": "Login failed"})
