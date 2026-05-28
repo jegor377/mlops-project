@@ -13,7 +13,6 @@ from src.ml_server.services.ml_model import Model
 
 
 def configure_google_oauth(oauth: OAuth, settings: Settings):
-    # Configure OAuth
     oauth.register(
         name="google",
         client_id=settings.google_oauth2_creds.client_id,
@@ -23,6 +22,18 @@ def configure_google_oauth(oauth: OAuth, settings: Settings):
         access_token_url="https://oauth2.googleapis.com/token",
         client_kwargs={"scope": "openid email profile"},
         server_metadata_url="https://accounts.google.com/.well-known/openid-configuration"
+    )
+
+
+def configure_github_oauth(oauth: OAuth, settings: Settings):
+    oauth.register(
+        name="github",
+        client_id=settings.github_client_id,
+        client_secret=settings.github_client_secret,
+        access_token_url="https://github.com/login/oauth/access_token",
+        authorize_url="https://github.com/login/oauth/authorize",
+        api_base_url="https://api.github.com/",
+        client_kwargs={"scope": "user:email"},  # needed for /user/emails
     )
 
 
@@ -42,6 +53,7 @@ def create_app(settings: Settings) -> FastAPI:
         app.state.db = async_sessionmaker(engine, expire_on_commit=False)
         oauth = OAuth()
         configure_google_oauth(oauth, settings)
+        configure_github_oauth(oauth, settings)
         app.state.oauth = oauth
         yield
         # Clean up the ML models and release the resources
