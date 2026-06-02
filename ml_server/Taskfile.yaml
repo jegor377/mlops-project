@@ -18,6 +18,8 @@ tasks:
       SMTP__FROM_EMAIL_ADDRESS: no-reply@example.com
       GOOGLE_OAUTH2_CREDS__CLIENT_ID: dummy-client-id
       GOOGLE_OAUTH2_CREDS__CLIENT_SECRET: dummy-client-secret
+      GITHUB_OAUTH2_CREDS__CLIENT_ID: dummy-client-id
+      GITHUB_OAUTH2_CREDS__CLIENT_SECRET: dummy-client-secret
       FAIL_FAST: false
     cmds:
       - uv run pytest {{if eq .FAIL_FAST "true"}}--maxfail=1 {{end}}{{.CLI_ARGS | default ""}}
