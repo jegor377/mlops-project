@@ -13,4 +13,4 @@ patches:
       name: ml-server
 images:
   - name: igorsantarek/ml_server
-    newTag: 0.9.3-0046-gce7f772
+    newTag: 0.9.3-0048-ga9f5a2a
