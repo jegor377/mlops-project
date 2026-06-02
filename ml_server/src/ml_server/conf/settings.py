@@ -32,6 +32,11 @@ class GoogleOAuth2Credentials(BaseModel):
     client_secret: str
 
 
+class GitHubOAuthCredentials(BaseModel):
+    client_id: str
+    client_secret: str
+
+
 class Settings(BaseSettings):
     env: Literal[
         'development',
@@ -51,6 +56,7 @@ class Settings(BaseSettings):
     password_reset_expire_hours: int = 1
     pat_count_limit: int = 50
     google_oauth2_creds: GoogleOAuth2Credentials
+    github_oauth2_creds: GitHubOAuthCredentials
 
     model_config = SettingsConfigDict(
         env_file='.env',

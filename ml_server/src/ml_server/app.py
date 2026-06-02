@@ -28,8 +28,8 @@ def configure_google_oauth(oauth: OAuth, settings: Settings):
 def configure_github_oauth(oauth: OAuth, settings: Settings):
     oauth.register(
         name="github",
-        client_id=settings.github_client_id,
-        client_secret=settings.github_client_secret,
+        client_id=settings.github_oauth2_creds.client_id,
+        client_secret=settings.github_oauth2_creds.client_secret,
         access_token_url="https://github.com/login/oauth/access_token",
         authorize_url="https://github.com/login/oauth/authorize",
         api_base_url="https://api.github.com/",
