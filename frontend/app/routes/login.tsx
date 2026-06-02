@@ -14,6 +14,7 @@ export default function LoginPage() {
   const justRegistered = searchParams.get("registered") === "true";
   const justActivated = searchParams.get("just-activated") === "true";
   const googleCancelled = searchParams.get("error") === "google_login_cancelled";
+  const githubCancelled = searchParams.get("error") === "github_login_cancelled";
   const oauthLoginError = searchParams.get("login-error");
   const navigate = useNavigate();
 
@@ -82,14 +83,14 @@ export default function LoginPage() {
         )}
 
         {/* Warning banner */}
-        {googleCancelled && (
+        {(googleCancelled || githubCancelled) && (
           <div className="mb-4 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2 text-sm text-amber-700">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
               <line x1="12" y1="9" x2="12" y2="13" />
               <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
-            Google sign-in was cancelled.
+            {googleCancelled ? "Google" : "GitHub"} sign-in was cancelled.
           </div>
         )}
 
@@ -168,19 +169,19 @@ export default function LoginPage() {
 
         {/* OAuth Buttons */}
         <div className="space-y-2 sm:space-y-3">
-          <a href="/auth/login_via_google" className="w-full flex items-center justify-center gap-2 border border-gray-200 rounded-lg py-2 sm:py-2.5 text-sm hover:bg-gray-50 transition cursor-pointer">
+          <a href="/auth/login_via/google" className="w-full flex items-center justify-center gap-2 border border-gray-200 rounded-lg py-2 sm:py-2.5 text-sm hover:bg-gray-50 transition cursor-pointer">
             <svg width="16" height="16" viewBox="0 0 24 24">
               <path fill="#EA4335" d="M12 10.2v3.6h5.1c-.2 1.2-1.4 3.5-5.1 3.5-3.1 0-5.6-2.6-5.6-5.8s2.5-5.8 5.6-5.8c1.8 0 3 .8 3.7 1.4l2.5-2.4C16.9 3.2 14.7 2.3 12 2.3 6.9 2.3 2.8 6.5 2.8 11.5S6.9 20.7 12 20.7c6.9 0 9.2-4.8 9.2-7.3 0-.5 0-.8-.1-1.2H12z" />
             </svg>
             Continue with Google
           </a>
 
-          <button className="w-full flex items-center justify-center gap-2 border border-gray-200 rounded-lg py-2 sm:py-2.5 text-sm hover:bg-gray-50 transition cursor-pointer">
+          <a href="/auth/login_via/github" className="w-full flex items-center justify-center gap-2 border border-gray-200 rounded-lg py-2 sm:py-2.5 text-sm hover:bg-gray-50 transition cursor-pointer">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 .5C5.7.5.9 5.3.9 11.6c0 4.9 3.2 9 7.6 10.4.6.1.8-.3.8-.6v-2.3c-3.1.7-3.7-1.5-3.7-1.5-.5-1.3-1.2-1.6-1.2-1.6-1-.7.1-.7.1-.7 1.1.1 1.7 1.2 1.7 1.2 1 .1.7 2.3 2.9 1.6.1-.7.4-1.2.7-1.5-2.5-.3-5.1-1.3-5.1-5.8 0-1.3.5-2.3 1.2-3.2-.1-.3-.5-1.6.1-3.3 0 0 1-.3 3.3 1.2a11.4 11.4 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.7.2 3 .1 3.3.8.9 1.2 2 1.2 3.2 0 4.5-2.6 5.5-5.1 5.8.4.3.7.9.7 1.9v2.8c0 .3.2.7.8.6 4.4-1.4 7.6-5.5 7.6-10.4C23.1 5.3 18.3.5 12 .5z" />
             </svg>
             Continue with GitHub
-          </button>
+          </a>
         </div>
 
         {/* Footer */}

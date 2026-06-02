@@ -44,6 +44,7 @@ async def create_active_user(
     normalized_email: str,
     sub: str,
     redirect_uri: str,
+    auth_provider: AuthProvider,
     session: AsyncSession
 ) -> tuple[RedirectResponse | None, User]:
     user = User(
@@ -54,7 +55,7 @@ async def create_active_user(
 
     new_auth_method = UserAuthMethod(
         user=user,
-        provider=AuthProvider.GOOGLE,
+        provider=auth_provider,
         provider_user_id=sub,
     )
 
@@ -67,11 +68,12 @@ async def try_creating_user_auth_method(
     user: User,
     sub: str,
     redirect_uri: str,
+    auth_provider: AuthProvider,
     session: AsyncSession
 ) -> RedirectResponse | None:
     stmt = select(UserAuthMethod).where(
         UserAuthMethod.user_id == user.id,
-        UserAuthMethod.provider == AuthProvider.GOOGLE,
+        UserAuthMethod.provider == auth_provider,
         UserAuthMethod.provider_user_id == sub,
     )
     result = await session.execute(stmt)
@@ -80,7 +82,7 @@ async def try_creating_user_auth_method(
     if not auth_method:
         new_auth_method = UserAuthMethod(
             user_id=user.id,
-            provider=AuthProvider.GOOGLE,
+            provider=auth_provider,
             provider_user_id=sub,
         )
 
@@ -91,3 +93,31 @@ async def try_creating_user_auth_method(
 
         return await flush(session, redirect_uri)
     return None
+
+
+async def extract_oauth_profile(
+    provider: str,
+    client,
+    oauth_token: dict,
+) -> tuple[str | None, str | None]:
+    """Returns (sub, email) for the given provider, or (None, None) on failure."""
+    if provider == "google":
+        user_info = oauth_token.get("userinfo") or {}
+        sub = user_info.get("sub")
+        email = user_info.get("email")
+        if not user_info.get("email_verified", False):
+            email = None
+        return sub, email
+
+    if provider == "github":
+        profile = (await client.get("https://api.github.com/user", token=oauth_token)).json()
+        raw_id = profile.get("id")
+        sub = str(raw_id) if raw_id is not None else None
+        email = profile.get("email")
+        if not email:
+            emails = (await client.get("https://api.github.com/user/emails", token=oauth_token)).json()
+            primary = next((e for e in emails if e.get("primary") and e.get("verified")), None)
+            email = primary["email"] if primary else None
+        return sub, email
+
+    return None, None

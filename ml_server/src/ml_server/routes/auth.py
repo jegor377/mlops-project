@@ -340,55 +340,60 @@ async def logout(request: Request, session: Annotated[AsyncSession, Depends(get_
     return response
 
 
-@router.get("/auth/login_via_google")
-async def auth_google(
+@router.get("/auth/login_via/{provider}")
+async def auth_oauth(
     req: Request,
+    provider: str,
     settings: Annotated[Settings, Depends(get_settings)]
 ):
+    SUPPORTED_PROVIDERS = frozenset({"google", "github"})
+
+    if provider not in SUPPORTED_PROVIDERS:
+        raise HTTPException(status_code=404)
+
     redirect_uri = settings.hostname
-    redirect_uri += req.app.url_path_for("google_callback")
+    redirect_uri += req.app.url_path_for("oauth_callback", provider=provider)
 
     oauth = req.app.state.oauth
-    return await oauth.google.authorize_redirect(req, redirect_uri=redirect_uri)
+    client = getattr(oauth, provider)
+    return await client.authorize_redirect(req, redirect_uri=redirect_uri)
 
 
-# Handle the OAuth callback from Google
-@router.get("/auth/login_via_google/callback")
-async def google_callback(
+@router.get("/auth/login_via/{provider}/callback")
+async def oauth_callback(
     req: Request,
+    provider: str,
     session: Annotated[AsyncSession, Depends(get_session)],
     settings: Annotated[Settings, Depends(get_settings)]
 ):
-    # User cancelled the Google consent screen
+    if provider not in ("google", "github"):
+        raise HTTPException(status_code=404)
+
+    redirect_uri = settings.frontend_hostname + FrontendURLs.LOGIN
     error = req.query_params.get("error")
     if error:
-        login_uri = settings.frontend_hostname
-        login_uri += FrontendURLs.LOGIN
-        login_uri += "?" + urlencode({"error": "google_login_cancelled"})
-        return RedirectResponse(url=login_uri)
+        return RedirectResponse(
+            url=redirect_uri + "?" + urlencode({"error": f"{provider}_login_cancelled"})
+        )
 
     oauth = req.app.state.oauth
-    oauth_token = await oauth.google.authorize_access_token(req)
-    user_info = oauth_token.get("userinfo") or {}
+    client = getattr(oauth, provider)
+    oauth_token = await client.authorize_access_token(req)
 
-    # Extract user details
-    sub = user_info.get("sub")
-    email = user_info.get("email")
-    email_verified = user_info.get("email_verified", False)
+    # Normalize profile across providers
+    sub, email = await oauth_services.extract_oauth_profile(
+        provider,
+        client,
+        oauth_token
+    )
 
-    redirect_uri = settings.frontend_hostname
-    redirect_uri += FrontendURLs.LOGIN
-
-    if not sub or not email or not email_verified:
-        error_redirect_uri = (
-            redirect_uri
-            + "?"
-            + urlencode({"login-error": "Incomplete profile from Google"})
+    if not sub or not email:
+        return RedirectResponse(
+            url=redirect_uri + "?" + urlencode({"login-error": f"Incomplete profile from {provider.title()}"})
         )
-        response = RedirectResponse(url=error_redirect_uri)
-        return response
 
     normalized_email = email.lower().strip()
+    auth_provider = AuthProvider[provider.upper()]  # AuthProvider.GOOGLE / AuthProvider.GITHUB
 
     # Fetch user from the DB
     stmt = (
@@ -404,6 +409,7 @@ async def google_callback(
             normalized_email,
             sub,
             redirect_uri,
+            auth_provider,
             session
         )
     else:
@@ -411,6 +417,7 @@ async def google_callback(
             user,
             sub,
             redirect_uri,
+            auth_provider,
             session
         )
 
