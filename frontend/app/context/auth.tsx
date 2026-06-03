@@ -1,9 +1,9 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
-type AuthUser = { email: string; id: number } | null;
+type AuthUser = { email: string; id: number; is_active: boolean } | null;
 type AuthCtx = { user: AuthUser; loading: boolean; setUser: (u: AuthUser) => void };
 
-const AuthContext = createContext<AuthCtx>({ user: null, loading: true, setUser: () => {} });
+const AuthContext = createContext<AuthCtx>({user: null, loading: true, setUser: () => {} });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser>(null);
