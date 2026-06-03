@@ -324,7 +324,11 @@ async def reset_password(
 async def me(
     user: Annotated[User, Depends(get_current_user)],
 ):
-    return {"email": user.email, "id": user.id}
+    return {
+        "email": user.email,
+        "id": user.id,
+        "is_active": user.is_active
+    }
 
 
 @router.post("/auth/logout", status_code=200)
