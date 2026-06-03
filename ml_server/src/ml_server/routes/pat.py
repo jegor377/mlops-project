@@ -40,6 +40,9 @@ async def create_pat(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> PATCreateResponse:
     """Create a new PAT. Returns raw token once — store it securely."""
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="Inactive users cannot create tokens")
+
     now = datetime.now(timezone.utc)
     count_condition = and_(
         PersonalAccessToken.user_id == user.id,
@@ -139,6 +142,9 @@ async def list_pats(
 ) -> PATPage:
     """List all PATs for current user (active and inactive)."""
 
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="Inactive users cannot list tokens")
+
     now = datetime.now(timezone.utc)
     conditions = []
 
@@ -191,6 +197,9 @@ async def get_pat_stats(
 ) -> PATStatsResponse:
     """Get statistics about PATs for current user."""
 
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="Inactive users cannot view token stats")
+
     now = datetime.now(timezone.utc)
     total_count = await session.execute(select(func.count()).where(
         PersonalAccessToken.user_id == user.id
@@ -223,6 +232,10 @@ async def revoke_pat(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> None:
     """Revoke (soft-delete) a PAT. Only owner can revoke."""
+
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="Inactive users cannot revoke tokens")
+
     result = await session.execute(
         select(PersonalAccessToken).where(
             PersonalAccessToken.id == token_id,
