@@ -17,6 +17,7 @@ from src.ml_server.models.user_auth_method import UserAuthMethod, AuthProvider
 HOSTNAME = "localhost"
 REGISTER_URL = "/auth/register"
 VERIFY_URL = "/auth/verify-email"
+RESEND_URL = "/auth/resend-verification"
 VALID_PAYLOAD = {"email": "igor@example.com", "password": "StrongPass1!"}
 
 
@@ -86,6 +87,139 @@ async def test_register_email_send_failure_still_returns_201(client, db_session)
         response = await client.post(REGISTER_URL, json=VALID_PAYLOAD)
 
     assert response.status_code == 201
+
+
+# ---------------------------------------------------------------------------
+# resend-verification
+# ---------------------------------------------------------------------------
+
+
+async def _create_inactive_user_with_session(
+    client,
+    db_session: AsyncSession,
+    *,
+    email: str = "resend@example.com",
+) -> tuple[User, str]:
+    """Register a user and return the user row + raw password (no email send)."""
+    password = "StrongPass1!"
+    with patch("src.ml_server.routes.auth.send_verification_email", new_callable=AsyncMock):
+        await client.post(REGISTER_URL, json={"email": email, "password": password})
+
+    result = await db_session.execute(select(User).where(User.email == email))
+    user = result.scalar_one()
+
+    # Log in so the client has a session cookie
+    response = await client.post("/auth/login", json={"email": email, "password": password})
+    assert response.status_code == 200
+
+    return user, password
+
+
+async def test_resend_verification_issues_new_token_when_expired(client, db_session):
+    user, _ = await _create_inactive_user_with_session(client, db_session)
+
+    # Expire the existing token
+    result = await db_session.execute(
+        select(EmailVerification).where(EmailVerification.user_id == user.id)
+    )
+    verification = result.scalar_one()
+    verification.expires_at = datetime.now(timezone.utc) - timedelta(hours=1)
+    await db_session.commit()
+    old_token = verification.token
+
+    with patch(
+        "src.ml_server.routes.auth.send_verification_email",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        response = await client.post(RESEND_URL)
+
+    assert response.status_code == 200
+
+    # Re-query — the old row was deleted and a new one inserted
+    result = await db_session.execute(
+        select(EmailVerification).where(EmailVerification.user_id == user.id)
+    )
+    new_verification = result.scalar_one()
+    assert new_verification.token != old_token
+    assert new_verification.expires_at > datetime.now(timezone.utc)
+
+    token_url = HOSTNAME + VERIFY_URL
+    token_url += "?" + urlencode({"token": new_verification.token})
+    mock_send.assert_awaited_once_with(user.email, token_url, ANY)
+
+
+async def test_resend_verification_silent_noop_when_token_still_valid(client, db_session):
+    user, _ = await _create_inactive_user_with_session(client, db_session)
+
+    result = await db_session.execute(
+        select(EmailVerification).where(EmailVerification.user_id == user.id)
+    )
+    original_token = result.scalar_one().token
+
+    with patch(
+        "src.ml_server.routes.auth.send_verification_email",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        response = await client.post(RESEND_URL)
+
+    assert response.status_code == 200
+    mock_send.assert_not_awaited()
+
+    # Token unchanged
+    result = await db_session.execute(
+        select(EmailVerification).where(EmailVerification.user_id == user.id)
+    )
+    assert result.scalar_one().token == original_token
+
+
+async def test_resend_verification_silent_noop_when_already_active(client, db_session):
+    user, _ = await _create_inactive_user_with_session(client, db_session)
+
+    user.is_active = True
+    await db_session.commit()
+
+    with patch(
+        "src.ml_server.routes.auth.send_verification_email",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        response = await client.post(RESEND_URL)
+
+    assert response.status_code == 200
+    mock_send.assert_not_awaited()
+
+
+async def test_resend_verification_requires_auth(client, db_session):
+    # No session cookie — get_current_user should reject with 401
+    response = await client.post(RESEND_URL)
+
+    assert response.status_code == 401
+
+
+async def test_resend_verification_email_failure_still_returns_200(client, db_session):
+    user, _ = await _create_inactive_user_with_session(client, db_session)
+
+    # Expire the token so a new one gets issued and email is attempted
+    result = await db_session.execute(
+        select(EmailVerification).where(EmailVerification.user_id == user.id)
+    )
+    verification = result.scalar_one()
+    verification.expires_at = datetime.now(timezone.utc) - timedelta(hours=1)
+    await db_session.commit()
+
+    with patch(
+        "src.ml_server.routes.auth.send_verification_email",
+        new_callable=AsyncMock,
+        side_effect=Exception("SMTP down"),
+    ):
+        response = await client.post(RESEND_URL)
+
+    assert response.status_code == 200
+
+    # Token was still persisted despite email failure
+    result = await db_session.execute(
+        select(EmailVerification).where(EmailVerification.user_id == user.id)
+    )
+    assert result.scalar_one_or_none() is not None
 
 
 # ---------------------------------------------------------------------------
