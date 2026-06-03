@@ -111,6 +111,60 @@ async def register(
     return Response(status_code=201)
 
 
+@router.post("/auth/resend-verification", status_code=200)
+async def resend_verification(
+    session: Annotated[AsyncSession, Depends(get_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
+    user: Annotated[User, Depends(get_current_user)],
+    req: Request,
+):
+    # Already active — nothing to do, but don't leak state differences
+    if user.is_active:
+        return Response(status_code=200)
+
+    # Check for an unexpired token — don't spam the user
+    existing_result = await session.execute(
+        select(EmailVerification).where(EmailVerification.user_id == user.id)
+    )
+    existing = existing_result.scalar_one_or_none()
+
+    if existing is not None:
+        if existing.expires_at > datetime.now(timezone.utc):
+            # Still valid — silently do nothing (frontend shows generic "check inbox")
+            return Response(status_code=200)
+        # Expired — delete it and issue a fresh one
+        await session.delete(existing)
+
+    token = secrets.token_urlsafe(PASSWORD_ACTION_TOKEN_LEN)
+    expires_at = datetime.now(timezone.utc) + timedelta(
+        hours=settings.email_verification_expire_hours
+    )
+    verification = EmailVerification(
+        user_id=user.id,
+        token=token,
+        expires_at=expires_at,
+    )
+    session.add(verification)
+
+    try:
+        await session.commit()
+    except Exception as e:
+        await session.rollback()
+        logger.error(f"Failed to persist resend verification token for user {user.id}: {e}")
+        return Response(status_code=200)
+
+    try:
+        token_url = settings.hostname
+        token_url += req.app.url_path_for("verify_email")
+        token_url += "?" + urlencode({"token": token})
+
+        await send_verification_email(user.email, token_url, settings)
+    except Exception as e:
+        logger.error(f"Failed to resend verification email to {user.email}: {e}")
+
+    return Response(status_code=200)
+
+
 @router.get("/auth/verify-email", status_code=200)
 async def verify_email(
     token: Annotated[str, Query()],
