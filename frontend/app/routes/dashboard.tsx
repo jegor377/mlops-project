@@ -824,7 +824,7 @@ function TokensPage() {
                 setResendSent(true);
               }}
               disabled={resendSent}
-              className="... disabled:opacity-50 disabled:cursor-not-allowed"
+              className="cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {resendSent ? "Email sent ✓" : "Resend email →"}
             </button>
