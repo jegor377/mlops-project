@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router";
+import { useAuth } from "../context/auth";
 
 type ApiError = {
   detail: string;
@@ -17,6 +18,7 @@ export default function LoginPage() {
   const githubCancelled = searchParams.get("error") === "github_login_cancelled";
   const oauthLoginError = searchParams.get("login-error");
   const navigate = useNavigate();
+  const { refetch } = useAuth();
 
   const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -35,6 +37,7 @@ export default function LoginPage() {
       });
 
       if (response.ok) {
+        await refetch();
         navigate("/dashboard");
         return;
       }

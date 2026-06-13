@@ -712,6 +712,7 @@ function TokensPage() {
   const { user, loading: authLoading } = useAuth();
   const userIsActive = !authLoading && (user !== null) && user.is_active;
   const [resendSent, setResendSent] = useState(false);
+  const pageRef = useRef(1);
   const SIZE = 10;
 
   const fetchCounts = useCallback(async () => {
@@ -727,8 +728,6 @@ function TokensPage() {
       // Ignore count fetch errors — main list will still load
     }
   }, [userIsActive, authLoading]);
-
-  const pageRef = useRef(1);
 
   const fetchTokens = useCallback(async (reset = false, nextFilter = filter) => {
     if (authLoading) return;
@@ -888,12 +887,7 @@ function TokensPage() {
         {FILTERS.map((f) => (
           <button
             key={f.id}
-            onClick={() => {
-              setFilter(f.id);
-              pageRef.current = 1;
-              setTokens([]);
-              fetchTokens(true, f.id);
-            }}
+            onClick={() => setFilter(f.id)}
             className={`text-xs px-3 py-1.5 rounded-lg mono capitalize transition-all duration-150 ${
               filter === f.id ? "bg-white text-gray-900 shadow-sm font-medium border border-gray-200" : "text-gray-400 hover:text-gray-600"
             } cursor-pointer`}
@@ -904,7 +898,7 @@ function TokensPage() {
       </div>
 
       <div className="space-y-3">
-        {loadingTokens && (
+        {loadingTokens && (tokens.length === 0) && (
           <div className="flex items-center justify-center py-16 gap-3 text-gray-400">
             <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
