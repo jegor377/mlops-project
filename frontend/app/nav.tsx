@@ -2,7 +2,24 @@ import { useState, useEffect } from "react";
 import { useAuth } from "./context/auth";
 import { useNavigate } from "react-router";
 
-const NAV_LINKS = ["Product", "Pricing", "Docs", "Blog"];
+const NAV_LINKS = [
+    {
+        name: "Home",
+        link: "/",
+    },
+    {
+        name: "Features",
+        link: "/#features",
+    },
+    {
+        name: "Pricing",
+        link: "/#pricing",
+    },
+    {
+        name: "API Docs",
+        link: "/docs",
+    }
+];
 
 function useScrolled() {
   const [scrolled, setScrolled] = useState(false);
@@ -41,8 +58,8 @@ export default function Nav() {
 
                 {/* Desktop Links */}
                 <div className="hidden md:flex items-center gap-8">
-                    {NAV_LINKS.map((l) => (
-                        <a key={l} href="#" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">{l}</a>
+                    {NAV_LINKS.map(({name, link}) => (
+                        <a key={name} href={link} className="text-sm text-gray-500 hover:text-gray-900 transition-colors">{name}</a>
                     ))}
                 </div>
 
@@ -78,8 +95,8 @@ export default function Nav() {
             {/* Mobile menu */}
             {menuOpen && (
                 <div className="md:hidden bg-white border-t border-gray-100 px-6 py-4 flex flex-col gap-4">
-                    {NAV_LINKS.map((l) => (
-                        <a key={l} href="#" className="text-sm text-gray-600">{l}</a>
+                    {NAV_LINKS.map(({name, link}) => (
+                        <a key={name} href={link} className="text-sm text-gray-600">{name}</a>
                     ))}
                     <a href="/register" className="text-sm bg-black text-white px-4 py-2 rounded-lg text-center font-medium">Get started →</a>
                 </div>

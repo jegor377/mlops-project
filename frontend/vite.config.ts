@@ -20,6 +20,14 @@ export default defineConfig({
               target: BACKEND_URL,
               changeOrigin: true,
             },
+            "/docs": {
+              target: BACKEND_URL,
+              changeOrigin: true,
+            },
+            "/openapi.json": {
+              target: BACKEND_URL,
+              changeOrigin: true,
+            }
           },
         },
       }
