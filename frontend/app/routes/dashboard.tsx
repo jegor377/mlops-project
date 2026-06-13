@@ -6,7 +6,7 @@ import { useAuth } from "../context/auth";
 
 type PillVariant = "default" | "green" | "red" | "blue" | "yellow";
 type FilterType = "all" | "active" | "inactive";
-type NavId = "overview" | "events" | "funnels" | "users" | "tokens" | "settings";
+type NavId = "overview" | "usage" | "requests" | "tokens" | "billing" | "settings";
 type ExpiryOption = "7 days" | "30 days" | "90 days" | "1 year" | "No expiration";
 
 interface Token {
@@ -94,10 +94,11 @@ const Icon = ({ d, size = 16, stroke = "currentColor", fill = "none", ...p }: Ic
 
 const icons = {
   overview: "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",
-  events: "M13 2L3 14h9l-1 8 10-12h-9l1-8z",
+  usage: "M18 20V10M12 20V4M6 20v-6",
+  requests: "M9 12l2 2 4-4M7 4H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2M9 4h6a1 1 0 0 1 0 2H9a1 1 0 0 1 0-2z",
   tokens:
     "M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4",
-  users: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2",
+  billing: "M3 10h18M7 15h.01M11 15h2M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z",
   settings:
     "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z",
   copy: "M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-4-4h-6M14 4v4h4M10 12h4M10 16h4",
@@ -110,10 +111,10 @@ const icons = {
   close: "M18 6 6 18M6 6l12 12",
   warn: "M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01",
   shield: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
-  funnels: "M3 4h18M7 8h10M11 12h2M10 16h4",
   chevron: "M9 18l6-6-6-6",
   refresh: "M1 4v6h6M23 20v-6h-6M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15",
   alertCircle: "M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM12 8v4M12 16h.01",
+  trendUp: "M23 6l-9.5 9.5-5-5L1 18M17 6h6v6",
 } as const;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -163,12 +164,12 @@ const SCOPES: Scope[] = [
 const EXPIRY_OPTIONS: ExpiryOption[] = ["7 days", "30 days", "90 days", "1 year", "No expiration"];
 
 const NAV: NavItem[] = [
-  { id: "overview", label: "Overview", icon: "overview" },
-  { id: "events", label: "Events", icon: "events" },
-  { id: "funnels", label: "Funnels", icon: "funnels" },
-  { id: "users", label: "Users", icon: "users" },
-  { id: "tokens", label: "Access Tokens", icon: "tokens" },
-  { id: "settings", label: "Settings", icon: "settings" },
+  { id: "overview",  label: "Overview",      icon: "overview" },
+  { id: "usage",     label: "Usage",         icon: "usage" },
+  { id: "requests",  label: "Requests",      icon: "requests" },
+  { id: "tokens",    label: "Access Tokens", icon: "tokens" },
+  { id: "billing",   label: "Billing",       icon: "billing" },
+  { id: "settings",  label: "Settings",      icon: "settings" },
 ];
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -766,7 +767,6 @@ function TokensPage() {
   }, [filter, authLoading]);
 
   const handleCreated = (token: Token) => {
-    // Prepend to list — already persisted server-side
     setTokens((prev) => [token, ...prev]);
     fetchCounts();
   };
@@ -786,8 +786,7 @@ function TokensPage() {
       setRevokeId(null);
       fetchCounts();
     } catch {
-      // Keep modal open so user sees the failure — a toast would be better
-      // but stays minimal here
+      // Keep modal open on failure
     } finally {
       setRevoking(false);
     }
@@ -962,43 +961,116 @@ function TokensPage() {
   );
 }
 
-// ── Overview stub ─────────────────────────────────────────────────────────────
+// ── Overview page ─────────────────────────────────────────────────────────────
 
 function OverviewPage() {
-  const stats: [string, string, string][] = [
-    ["Total events", "1.24M", "+18.2%"],
-    ["Active users", "8,492", "+4.7%"],
-    ["Conversion", "3.61%", "+0.4%"],
+  const DAILY_LIMIT = 1000;
+  const usedToday = 742;
+  const usedPct = Math.round((usedToday / DAILY_LIMIT) * 100);
+
+  const statCards: { label: string; value: string; sub: string; subGreen?: boolean }[] = [
+    { label: "Requests today",    value: "742",      sub: `${DAILY_LIMIT - usedToday} remaining` },
+    { label: "Tokens this month", value: "2.1M",     sub: "↑ 14% vs last month", subGreen: true },
+    { label: "Avg latency",       value: "241 ms",   sub: "↓ 12 ms vs last week", subGreen: true },
+    { label: "Error rate",        value: "0.3%",     sub: "last 24 h" },
   ];
-  const bars = [40, 55, 35, 70, 65, 80, 60, 90, 75, 85, 95, 88, 72, 100, 92, 78, 85, 95, 88, 100];
+
+  const recentRequests: { path: string; status: number; latency: string; when: string }[] = [
+    { path: "POST /v1/classify", status: 200, latency: "118 ms", when: "2 min ago" },
+    { path: "POST /v1/classify", status: 200, latency: "241 ms", when: "5 min ago" },
+    { path: "POST /v1/classify", status: 429, latency: "8 ms",   when: "11 min ago" },
+    { path: "POST /v1/classify", status: 200, latency: "198 ms", when: "18 min ago" },
+    { path: "POST /v1/classify", status: 200, latency: "310 ms", when: "31 min ago" },
+  ];
+
+  // Spark bars — last 20 days of request counts (relative heights)
+  const spark = [38, 52, 44, 61, 57, 70, 63, 80, 74, 85, 79, 91, 68, 100, 88, 74, 82, 90, 85, usedPct];
 
   return (
-    <div className="max-w-5xl mx-auto py-10 px-8">
+    <div className="max-w-4xl mx-auto py-10 px-8">
       <h1 className="text-2xl font-semibold tracking-tight text-gray-950 mb-8">Overview</h1>
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        {stats.map(([label, val, change]) => (
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        {statCards.map(({ label, value, sub, subGreen }) => (
           <div key={label} className="border border-gray-100 rounded-2xl p-5 bg-white">
-            <p className="text-xs text-gray-400 mb-1 mono">{label}</p>
-            <p className="text-3xl font-semibold tracking-tight mb-1">{val}</p>
-            <p className="text-xs text-emerald-500 mono">{change}</p>
+            <p className="text-xs text-gray-400 mono mb-2">{label}</p>
+            <p className="text-2xl font-semibold tracking-tight text-gray-950 mb-1">{value}</p>
+            <p className={`text-xs mono ${subGreen ? "text-emerald-500" : "text-gray-400"}`}>{sub}</p>
           </div>
         ))}
       </div>
-      <div className="border border-gray-100 rounded-2xl p-6 bg-white">
-        <p className="text-xs text-gray-400 mb-4 mono">Events over time</p>
-        <div className="flex items-end gap-1.5 h-32">
-          {bars.map((h, i) => (
-            <div
-              key={i}
-              className="flex-1 rounded-sm transition-all"
-              style={{ height: `${h}%`, background: i === bars.length - 1 ? "#0f0f0f" : "#e5e7eb" }}
-            />
-          ))}
+
+      {/* Daily limit bar */}
+      <div className="border border-gray-100 rounded-2xl p-5 bg-white mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <p className="text-xs text-gray-400 mono mb-0.5">Daily limit — Free plan</p>
+            <p className="text-sm font-medium text-gray-950">
+              {usedToday.toLocaleString()} <span className="text-gray-300 font-normal">/ {DAILY_LIMIT.toLocaleString()} requests</span>
+            </p>
+          </div>
+          <span className="text-xs mono text-gray-400">{usedPct}%</span>
+        </div>
+        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full bg-gray-900 transition-all duration-500"
+            style={{ width: `${usedPct}%` }}
+          />
+        </div>
+        <p className="text-xs text-gray-400 mono mt-2">Resets at midnight UTC · <button className="underline underline-offset-2 hover:text-gray-600 transition-colors cursor-pointer">Upgrade for more</button></p>
+      </div>
+
+      {/* Sparkline + recent requests */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Sparkline */}
+        <div className="border border-gray-100 rounded-2xl p-5 bg-white">
+          <p className="text-xs text-gray-400 mono mb-4">Requests — last 20 days</p>
+          <div className="flex items-end gap-1 h-24">
+            {spark.map((h, i) => (
+              <div
+                key={i}
+                className="flex-1 rounded-sm transition-all"
+                style={{
+                  height: `${h}%`,
+                  background: i === spark.length - 1 ? "#0f0f0f" : "#e5e7eb",
+                }}
+              />
+            ))}
+          </div>
+          <div className="flex justify-between mt-2 text-xs text-gray-300 mono">
+            <span>20d ago</span>
+            <span>Today</span>
+          </div>
+        </div>
+
+        {/* Recent requests */}
+        <div className="border border-gray-100 rounded-2xl p-5 bg-white">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs text-gray-400 mono">Recent requests</p>
+            <button className="text-xs text-gray-400 mono hover:text-gray-600 transition-colors cursor-pointer">
+              View all →
+            </button>
+          </div>
+          <div className="space-y-2.5">
+            {recentRequests.map((r, i) => (
+              <div key={i} className="flex items-center gap-2 text-xs mono">
+                <span className={`w-8 text-center font-medium shrink-0 ${r.status === 200 ? "text-emerald-500" : "text-red-400"}`}>
+                  {r.status}
+                </span>
+                <span className="flex-1 text-gray-500 truncate">{r.path}</span>
+                <span className="text-gray-400 shrink-0">{r.latency}</span>
+                <span className="text-gray-300 shrink-0 w-16 text-right">{r.when}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
   );
 }
+
+// ── Placeholder ───────────────────────────────────────────────────────────────
 
 interface PlaceholderPageProps {
   name: string | undefined;
@@ -1018,7 +1090,7 @@ function PlaceholderPage({ name }: PlaceholderPageProps) {
 // ── App ───────────────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
-  const [active, setActive] = useState<NavId>("tokens");
+  const [active, setActive] = useState<NavId>("overview");
 
   const content: Partial<Record<NavId, ReactNode>> = {
     overview: <OverviewPage />,
