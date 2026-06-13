@@ -231,6 +231,22 @@ async def test_create_pat_exceeding_limit_returns_400(client, db_session, app, t
     mock_send.assert_not_awaited()
 
 
+async def test_create_pat_inactive_user_returns_403(client, db_session):
+    user = await make_classic_user(session=db_session, is_active=False)
+    us = await make_session(db_session, user)
+    client.cookies.set("session", us.token)
+
+    with patch(
+        "src.ml_server.routes.pat.send_pat_creation_email",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        resp = await client.post(CREATE_URL, json=VALID_BODY)
+
+    assert resp.status_code == 403
+    assert resp.json()["detail"] == "Inactive users cannot create tokens"
+    mock_send.assert_not_awaited()
+
+
 # ── GET /api/tokens ───────────────────────────────────────────────────────────
 
 
@@ -368,6 +384,16 @@ async def test_list_pats_status_filter(client, db_session):
     assert "Revoked Token" in names
 
 
+async def test_list_pats_inactive_user_returns_403(client, db_session):
+    user = await make_classic_user(session=db_session, is_active=False)
+    us = await make_session(db_session, user)
+    client.cookies.set("session", us.token)
+
+    resp = await client.get(LIST_URL)
+    assert resp.status_code == 403
+    assert resp.json()["detail"] == "Inactive users cannot list tokens"
+
+
 # ── GET /api/tokens/stats ───────────────────────────────────────────────────
 
 
@@ -388,6 +414,16 @@ async def test_stats_endpoint_returns_correct_counts(client, db_session):
     assert data["total"] == 3
     assert data["active"] == 1
     assert data["inactive"] == 2
+
+
+async def test_stats_inactive_user_returns_403(client, db_session):
+    user = await make_classic_user(session=db_session, is_active=False)
+    us = await make_session(db_session, user)
+    client.cookies.set("session", us.token)
+
+    resp = await client.get("/api/tokens/stats")
+    assert resp.status_code == 403
+    assert resp.json()["detail"] == "Inactive users cannot view token stats"
 
 
 # ── DELETE /api/tokens/{id} ───────────────────────────────────────────────────
@@ -484,4 +520,21 @@ async def test_revoke_pat_unauthenticated_returns_401(client, db_session):
     ) as mock_send:
         resp = await client.delete("/api/tokens/1")
     assert resp.status_code == 401
+    mock_send.assert_not_awaited()
+
+
+async def test_revoke_pat_inactive_user_returns_403(client, db_session):
+    user = await make_classic_user(session=db_session, is_active=False)
+    us = await make_session(db_session, user)
+    pat, _ = await make_pat(db_session, user)
+    client.cookies.set("session", us.token)
+
+    with patch(
+        "src.ml_server.routes.pat.send_pat_revocation_email",
+        new_callable=AsyncMock,
+    ) as mock_send:
+        resp = await client.delete(f"/api/tokens/{pat.id}")
+
+    assert resp.status_code == 403
+    assert resp.json()["detail"] == "Inactive users cannot revoke tokens"
     mock_send.assert_not_awaited()

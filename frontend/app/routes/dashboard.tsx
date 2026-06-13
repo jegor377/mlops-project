@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { ReactNode, SVGProps } from "react";
+import { useAuth } from "../context/auth";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -704,14 +705,18 @@ function TokensPage() {
   const [revokeId, setRevokeId] = useState<number | null>(null);
   const [revoking, setRevoking] = useState(false);
   const [filter, setFilter] = useState<FilterType>("all");
-  const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
   const [activeCount, setActiveCount] = useState(0);
   const [inactiveCount, setInactiveCount] = useState(0);
+  const { user, loading: authLoading } = useAuth();
+  const userIsActive = !authLoading && (user !== null) && user.is_active;
+  const [resendSent, setResendSent] = useState(false);
+  const pageRef = useRef(1);
   const SIZE = 10;
 
   const fetchCounts = useCallback(async () => {
+    if (!userIsActive || authLoading) return;
     try {
       const res = await fetch(`/api/tokens/stats`, { credentials: "include" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -722,13 +727,15 @@ function TokensPage() {
     } catch {
       // Ignore count fetch errors — main list will still load
     }
-  }, []);
+  }, [userIsActive, authLoading]);
 
   const fetchTokens = useCallback(async (reset = false, nextFilter = filter) => {
+    if (authLoading) return;
+    if (!userIsActive) { setLoadingTokens(false); return; }
     setLoadingTokens(true);
     setFetchError(null);
 
-    const targetPage = reset ? 1 : page;
+    const targetPage = reset ? 1 : pageRef.current;
 
     try {
       const res = await fetch(
@@ -738,25 +745,25 @@ function TokensPage() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: APIPATPage = await res.json();
       const mapped = data.items.map(mapAPIToken);
-      setTokens((prev) =>
-        reset ? mapped : [...prev, ...mapped]
-      );
+      setTokens((prev) => reset ? mapped : [...prev, ...mapped]);
       setHasMore(data.items.length === SIZE);
-      setPage(targetPage + 1);
+      pageRef.current = targetPage + 1;
     } catch {
       setFetchError("Failed to load tokens. Please try again.");
     } finally {
       setLoadingTokens(false);
     }
-  }, [page, filter]);
+  }, [filter, userIsActive, authLoading]);
 
   useEffect(() => {
+    if (authLoading) return;
     fetchCounts();
-  }, [fetchCounts]);
+  }, [fetchCounts, authLoading]);
 
   useEffect(() => {
+    if (authLoading) return;
     fetchTokens(true, filter);
-  }, [filter]);
+  }, [filter, authLoading]);
 
   const handleCreated = (token: Token) => {
     // Prepend to list — already persisted server-side
@@ -792,8 +799,47 @@ function TokensPage() {
     { id: "inactive", label: "Inactive" }
   ];
 
+  if (authLoading) return (
+    <div className="flex items-center justify-center py-16 gap-3 text-gray-400">
+      <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+      </svg>
+      <span className="text-sm mono">Loading…</span>
+    </div>
+  );
+
   return (
     <div className="max-w-3xl mx-auto py-10 px-8">
+      {!userIsActive && (
+        <div className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 overflow-hidden">
+          <div className="flex items-start gap-4 p-5">
+            <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
+              <Icon d={icons.warn} size={18} stroke="#d97706" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-amber-900 mb-1">Email verification required</p>
+              <p className="text-xs text-amber-700 leading-relaxed">
+                Your account is not yet active. Please verify your email address to create, view, and manage personal access tokens.
+                Check your inbox for a verification link.
+              </p>
+            </div>
+          </div>
+          <div className="border-t border-amber-200 px-5 py-3 bg-amber-100/40 flex items-center justify-between">
+            <span className="text-xs text-amber-600 mono">Token management is disabled until your account is verified.</span>
+            <button
+              onClick={async () => {
+                await fetch("/auth/resend-verification", { method: "POST", credentials: "include" });
+                setResendSent(true);
+              }}
+              disabled={resendSent}
+              className="cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {resendSent ? "Email sent ✓" : "Resend email →"}
+            </button>
+          </div>
+        </div>
+      )}
       <div className="flex items-start justify-between mb-8 gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-gray-950 mb-1">Access Tokens</h1>
@@ -804,9 +850,10 @@ function TokensPage() {
         </div>
         <button
           onClick={() => setShowCreate(true)}
+          disabled={!userIsActive}
           className="shrink-0 flex items-center gap-2 bg-gray-950 text-white text-sm
           font-medium px-4 py-2.5 rounded-xl hover:bg-gray-800 transition-colors whitespace-nowrap
-          cursor-pointer"
+          cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Icon d={icons.plus} size={14} stroke="white" />
           New token
@@ -840,12 +887,7 @@ function TokensPage() {
         {FILTERS.map((f) => (
           <button
             key={f.id}
-            onClick={() => {
-              setFilter(f.id);
-              setPage(1);
-              setTokens([]);
-              fetchTokens(true, f.id);
-            }}
+            onClick={() => setFilter(f.id)}
             className={`text-xs px-3 py-1.5 rounded-lg mono capitalize transition-all duration-150 ${
               filter === f.id ? "bg-white text-gray-900 shadow-sm font-medium border border-gray-200" : "text-gray-400 hover:text-gray-600"
             } cursor-pointer`}
@@ -856,7 +898,7 @@ function TokensPage() {
       </div>
 
       <div className="space-y-3">
-        {loadingTokens && (
+        {loadingTokens && (tokens.length === 0) && (
           <div className="flex items-center justify-center py-16 gap-3 text-gray-400">
             <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
@@ -882,7 +924,7 @@ function TokensPage() {
           </div>
         )}
 
-        {!loadingTokens && !fetchError && tokens.length === 0 && (
+        {!loadingTokens && !fetchError && userIsActive && tokens.length === 0 && (
           <div className="text-center py-16 text-gray-400">
             <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
               <Icon d={icons.tokens} size={20} stroke="#d1d5db" />
@@ -891,13 +933,12 @@ function TokensPage() {
           </div>
         )}
 
-        {!loadingTokens &&
-          !fetchError &&
+        {!loadingTokens && !fetchError && userIsActive &&
           tokens.map((token) => (
             <TokenRow key={token.id} token={token} onRevoke={(id) => setRevokeId(id)} />
           ))}
       </div>
-      {hasMore && !loadingTokens && (
+      {hasMore && !loadingTokens && userIsActive && (
         <button
           onClick={() => fetchTokens(false)}
           className="w-full mt-4 text-sm text-gray-500 hover:text-gray-700 cursor-pointer transition-colors mono flex items-center justify-center gap-1.5"

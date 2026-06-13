@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router";
+import { useAuth } from "../context/auth";
 
 type ApiError = {
   detail: string;
 };
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [searchParams] = useSearchParams();
@@ -17,11 +18,15 @@ export default function LoginPage() {
   const githubCancelled = searchParams.get("error") === "github_login_cancelled";
   const oauthLoginError = searchParams.get("login-error");
   const navigate = useNavigate();
+  const { refetch } = useAuth();
 
   const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
+
+    const email = emailRef.current?.value ?? "";
+    const password = passwordRef.current?.value ?? "";
 
     try {
       const response = await fetch("/auth/login", {
@@ -32,6 +37,7 @@ export default function LoginPage() {
       });
 
       if (response.ok) {
+        await refetch();
         navigate("/dashboard");
         return;
       }
@@ -124,8 +130,8 @@ export default function LoginPage() {
             <label className="text-xs text-gray-500">Email</label>
             <input
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              ref={emailRef}
+              defaultValue=""
               required
               disabled={loading}
               className="mt-1 w-full px-3 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/80 focus:border-black transition disabled:opacity-50"
@@ -142,8 +148,8 @@ export default function LoginPage() {
             </div>
             <input
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              ref={passwordRef}
+              defaultValue=""
               required
               disabled={loading}
               className="mt-1 w-full px-3 py-2 sm:py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/80 focus:border-black transition disabled:opacity-50"

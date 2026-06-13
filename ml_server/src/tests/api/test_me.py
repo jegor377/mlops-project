@@ -18,6 +18,7 @@ async def test_me_returns_user_data_for_valid_session(client, db_session):
     data = response.json()
     assert data["email"] == user.email
     assert data["id"] == user.id
+    assert data["is_active"] == user.is_active
 
 
 async def test_me_no_cookie_returns_401(client, db_session):
