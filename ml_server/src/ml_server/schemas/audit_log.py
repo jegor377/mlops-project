@@ -1,9 +1,11 @@
 from pydantic import BaseModel
 
+from src.ml_server.models.audit_log import EventCategory
+
 
 class AuditLogEntryResponse(BaseModel):
     id: int
-    event: str
+    event: EventCategory
     ip: str | None
     user_agent: str | None
     metadata: dict[str, str] | None

@@ -18,14 +18,14 @@ from __future__ import annotations
 from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.ml_server.models.audit_log import AuditLog, EVENT_CATEGORY
+from src.ml_server.models.audit_log import AuditLog, EventCategory, EVENT_CATEGORY
 
 
 async def log_event(
     db: AsyncSession,
     *,
     user_id: int,
-    event: str,
+    event: EventCategory,
     request: Request | None = None,
     metadata: dict[str, str] | None = None,
 ) -> None:
