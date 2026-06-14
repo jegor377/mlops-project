@@ -6,6 +6,7 @@ from pydantic_settings import (
 from pydantic import (
     BaseModel,
     PostgresDsn,
+    RedisDsn,
 )
 from typing import Literal
 
@@ -47,6 +48,7 @@ class Settings(BaseSettings):
     frontend_hostname: str
     oauth_state_session_secret_key: str
     db_uri: PostgresDsn
+    redis_uri: RedisDsn
     load_model: bool
     pool_size: int = 5
     max_overflow: int = 10
@@ -57,6 +59,7 @@ class Settings(BaseSettings):
     pat_count_limit: int = 50
     google_oauth2_creds: GoogleOAuth2Credentials
     github_oauth2_creds: GitHubOAuthCredentials
+    daily_request_limit: int = 1000
 
     model_config = SettingsConfigDict(
         env_file='.env',
