@@ -19,7 +19,7 @@ from src.ml_server.models.pat import PersonalAccessToken
 from src.ml_server.models.user import User
 from src.ml_server.models.user_auth_method import UserAuthMethod, AuthProvider
 from src.ml_server.models.user_session import UserSession
-from src.ml_server.models.audit_log import AuditLog
+from src.ml_server.models.audit_log import AuditLog, EVENT_CATEGORY
 
 
 LOGIN_PAYLOAD = {"email": "test@example.com", "password": "testpassword"}
@@ -78,6 +78,13 @@ async def client(app, db_session, test_settings):
     ) as c:
         yield c
     app.dependency_overrides.pop(get_session, None)
+
+
+@pytest_asyncio.fixture(autouse=True)
+async def flush_redis(app):
+    """Clears Redis before every test - isolation of rate limitting counters."""
+    await app.state.redis.flushdb()
+    yield
 
 
 async def make_classic_user(session: AsyncSession, email: str = LOGIN_PAYLOAD["email"], is_active: bool = True) -> User:
@@ -145,7 +152,7 @@ async def make_pat(
 
 async def make_audit_log_entry(
     session: AsyncSession,
-    user: "User",
+    user: User,
     *,
     event: str = "auth.login",
     ip: str | None = "127.0.0.1",
@@ -153,8 +160,6 @@ async def make_audit_log_entry(
     metadata: dict | None = None,
     created_at: datetime | None = None,
 ) -> AuditLog:
-    from src.ml_server.models.audit_log import AuditLog, EVENT_CATEGORY
-
     category = EVENT_CATEGORY[event]
     entry = AuditLog(
         user_id=user.id,
