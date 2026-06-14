@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from src.tests.conftest import make_classic_user, make_audit_log_entry, make_session
 
 
-AUDIT_LOG_URL = "/audit-log"
+AUDIT_LOG_URL = "/api/audit-log"
 
 
 # ── POST /audit-log (via service, not endpoint) ───────────────────────────
