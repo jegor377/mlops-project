@@ -21,15 +21,16 @@ class AuditCategory(str, enum.Enum):
 
 
 class EventCategory(str, enum.Enum):
-    pat_created                 = "pat.created"
-    pat_revoked                 = "pat.revoked"
-    auth_login                  = "auth.login"
-    auth_login_failed           = "auth.login_failed"
-    auth_logout                 = "auth.logout"
-    auth_oauth_login            = "auth.oauth_login"
-    account_email_verified      = "account.email_verified"
-    account_password_changed    = "account.password_changed"
+    pat_created = "pat.created"
+    pat_revoked = "pat.revoked"
+    auth_login = "auth.login"
+    auth_login_failed = "auth.login_failed"
+    auth_logout = "auth.logout"
+    auth_oauth_login = "auth.oauth_login"
+    account_email_verified = "account.email_verified"
+    account_password_changed = "account.password_changed"
     account_verification_resent = "account.verification_resent"
+
 
 # Mapping: event string → category
 EVENT_CATEGORY: dict[str, AuditCategory] = {

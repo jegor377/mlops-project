@@ -46,7 +46,7 @@ async def create_active_user(
     redirect_uri: str,
     auth_provider: AuthProvider,
     session: AsyncSession
-) -> tuple[RedirectResponse | None, User]:
+) -> User:
     user = User(
         email=normalized_email,
         is_active=True,
@@ -61,7 +61,7 @@ async def create_active_user(
 
     session.add(user)
     session.add(new_auth_method)
-    return await flush(session, redirect_uri), user
+    return user
 
 
 async def try_creating_user_auth_method(
@@ -70,7 +70,7 @@ async def try_creating_user_auth_method(
     redirect_uri: str,
     auth_provider: AuthProvider,
     session: AsyncSession
-) -> RedirectResponse | None:
+) -> None:
     stmt = select(UserAuthMethod).where(
         UserAuthMethod.user_id == user.id,
         UserAuthMethod.provider == auth_provider,
@@ -90,9 +90,6 @@ async def try_creating_user_auth_method(
 
         user.is_active = True
         user.activated_at = datetime.now(timezone.utc)
-
-        return await flush(session, redirect_uri)
-    return None
 
 
 async def extract_oauth_profile(
@@ -121,3 +118,28 @@ async def extract_oauth_profile(
         return sub, email
 
     return None, None
+
+
+async def handle_oauth_user_provisioning(
+    session: AsyncSession,
+    user: User | None,
+    normalized_email: str,
+    sub: str,
+    redirect_uri: str,
+    auth_provider: AuthProvider,
+) -> User:
+    """Handles the transactional creation or updating of an OAuth user."""
+    try:
+        if not user:
+            user = await create_active_user(
+                normalized_email, sub, redirect_uri, auth_provider, session
+            )
+        else:
+            await try_creating_user_auth_method(
+                user, sub, redirect_uri, auth_provider, session
+            )
+        await session.flush()
+        return user
+    except (IntegrityError, Exception):
+        # We let the route handle the rollback and error response redirection
+        raise
