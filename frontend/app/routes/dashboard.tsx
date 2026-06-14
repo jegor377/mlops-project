@@ -1135,7 +1135,7 @@ export function AuditLogPage() {
         size: String(SIZE),
         ...(cat !== "all" ? { category: cat } : {}),
       });
-      const res = await fetch(`/api/audit-log?${params}`, { credentials: "include" });
+      const res = await fetch(`/audit-log?${params}`, { credentials: "include" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: AuditLogPage = await res.json();
       setEntries((prev) => reset ? data.items : [...prev, ...data.items]);

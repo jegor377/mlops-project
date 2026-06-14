@@ -28,6 +28,10 @@ export default defineConfig({
               target: BACKEND_URL,
               changeOrigin: true,
             },
+            "/audit-log": {
+              target: BACKEND_URL,
+              changeOrigin: true,
+            },
           },
         },
       }
