@@ -17,6 +17,7 @@ from src.ml_server.models.user import User
 from src.ml_server.models.user_auth_method import UserAuthMethod, AuthProvider
 from src.ml_server.models.email_verification import EmailVerification
 from src.ml_server.models.password_reset import PasswordReset
+from src.ml_server.models.audit_log import EventCategory
 
 from src.ml_server.schemas.user import UserCreate, UserLogin, ForgotPassword, ResetPassword
 
@@ -32,6 +33,7 @@ from src.ml_server.services.session import (
     invalidate_session_by_session_token
 )
 import src.ml_server.services.oauth as oauth_services
+from src.ml_server.services.audit_log import log_event
 
 from src.ml_server.utils.frontend_urls import FrontendURLs
 
@@ -146,6 +148,13 @@ async def resend_verification(
     )
     session.add(verification)
 
+    await log_event(
+        db=session,
+        user_id=user.id,
+        event=EventCategory.account_verification_resent,
+        request=req,
+    )
+
     try:
         await session.commit()
     except Exception as e:
@@ -170,6 +179,7 @@ async def verify_email(
     token: Annotated[str, Query()],
     session: Annotated[AsyncSession, Depends(get_session)],
     settings: Annotated[Settings, Depends(get_settings)],
+    req: Request,
 ):
     result = await session.execute(
         select(EmailVerification).where(EmailVerification.token == token)
@@ -198,6 +208,13 @@ async def verify_email(
     user.is_active = True
     user.activated_at = datetime.now(timezone.utc)
     await session.delete(verification)
+
+    await log_event(
+        db=session,
+        user_id=user.id,
+        event=EventCategory.account_email_verified,
+        request=req,
+    )
 
     try:
         await session.commit()
@@ -261,6 +278,19 @@ async def login(
         auth_method.user.id,
         req.app.state.logger
     )
+
+    await log_event(
+        db=session,
+        user_id=auth_method.user.id,
+        event=EventCategory.auth_login,
+        request=req,
+    )
+
+    try:
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise HTTPException(status_code=500, detail="Internal server error")
 
     response = Response(status_code=200)
     set_session_cookie(response, settings, token, expires_at)
@@ -335,6 +365,7 @@ async def forgot_password(
 async def reset_password(
     request: ResetPassword,
     session: Annotated[AsyncSession, Depends(get_session)],
+    req: Request,
 ):
     result = await session.execute(
         select(PasswordReset).where(PasswordReset.token == request.token)
@@ -364,6 +395,13 @@ async def reset_password(
     auth_method.password_hash = password_hash.decode("utf-8")
     await session.delete(reset)
 
+    await log_event(
+        db=session,
+        user_id=auth_method.user.id,
+        event=EventCategory.account_password_changed,
+        request=req,
+    )
+
     try:
         await session.commit()
     except Exception as e:
@@ -386,13 +424,24 @@ async def me(
 
 
 @router.post("/auth/logout", status_code=200)
-async def logout(request: Request, session: Annotated[AsyncSession, Depends(get_session)]):
+async def logout(
+    request: Request,
+    session: Annotated[AsyncSession, Depends(get_session)]
+):
     token = request.cookies.get("session")
     if token:
-        await invalidate_session_by_session_token(
+        user_id = await invalidate_session_by_session_token(
             session,
             token
         )
+        if user_id != -1:
+            await log_event(
+                db=session,
+                user_id=user_id,
+                event=EventCategory.auth_logout,
+                request=request,
+            )
+        await session.commit()
     response = Response(status_code=200)
     response.delete_cookie("session")
     return response
@@ -461,33 +510,30 @@ async def oauth_callback(
     result = await session.execute(stmt)
     user = result.scalar_one_or_none()
 
-    # Check if user exists and if not then create it and activate
-    if not user:
-        err, user = await oauth_services.create_active_user(
-            normalized_email,
-            sub,
-            redirect_uri,
-            auth_provider,
-            session
+    try:
+        user = await oauth_services.handle_oauth_user_provisioning(
+            session, user, normalized_email, sub, redirect_uri, auth_provider
         )
-    else:
-        err = await oauth_services.try_creating_user_auth_method(
-            user,
-            sub,
-            redirect_uri,
-            auth_provider,
-            session
-        )
-
-    if err:
-        return err
+    except IntegrityError as e:
+        logger.error(f"IntegrityError during registration: {e.orig}")
+        await session.rollback()
+        return RedirectResponse(url=redirect_uri + "?" + urlencode({"login-error": "Login failed"}))
+    except Exception as e:
+        await session.rollback()
+        logger.error(f"Unexpected error creating user: {e}")
+        return RedirectResponse(url=redirect_uri + "?" + urlencode({"login-error": "Internal server error"}))
 
     if user.deactivated_at is not None:
         redirect_uri += "?" + urlencode({"login-error": "Login failed"})
         response = RedirectResponse(url=redirect_uri)
         return response
 
-    await session.commit()
+    await log_event(
+        db=session,
+        user_id=user.id,
+        event=EventCategory.auth_oauth_login,
+        request=req,
+    )
 
     # Invalidate existing session
     await invalidate_session_by_user_id(
@@ -502,6 +548,12 @@ async def oauth_callback(
         user.id,
         req.app.state.logger
     )
+
+    try:
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise HTTPException(status_code=500, detail="Internal server error")
 
     redirect_uri = settings.frontend_hostname
     redirect_uri += FrontendURLs.DASHBOARD

@@ -19,6 +19,7 @@ from src.ml_server.models.pat import PersonalAccessToken
 from src.ml_server.models.user import User
 from src.ml_server.models.user_auth_method import UserAuthMethod, AuthProvider
 from src.ml_server.models.user_session import UserSession
+from src.ml_server.models.audit_log import AuditLog
 
 
 LOGIN_PAYLOAD = {"email": "test@example.com", "password": "testpassword"}
@@ -140,3 +141,30 @@ async def make_pat(
     await session.commit()
     await session.refresh(pat)
     return pat, raw_token
+
+
+async def make_audit_log_entry(
+    session: AsyncSession,
+    user: "User",
+    *,
+    event: str = "auth.login",
+    ip: str | None = "127.0.0.1",
+    user_agent: str | None = "pytest/1.0",
+    metadata: dict | None = None,
+    created_at: datetime | None = None,
+) -> AuditLog:
+    from src.ml_server.models.audit_log import AuditLog, EVENT_CATEGORY
+
+    category = EVENT_CATEGORY[event]
+    entry = AuditLog(
+        user_id=user.id,
+        event=event,
+        category=category,
+        ip=ip,
+        user_agent=user_agent,
+        extra_metadata=metadata,
+        created_at=created_at or datetime.now(timezone.utc),
+    )
+    session.add(entry)
+    await session.flush()
+    return entry

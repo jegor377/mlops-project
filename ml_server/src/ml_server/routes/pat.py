@@ -24,6 +24,8 @@ from src.ml_server.schemas.pat import (
 )
 from src.ml_server.services.pat import hash_token
 from src.ml_server.services.email import send_pat_creation_email, send_pat_revocation_email
+from src.ml_server.services.audit_log import log_event, EventCategory
+
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -100,6 +102,13 @@ async def create_pat(
         is_active=True,
     )
     session.add(pat)
+
+    await log_event(
+        db=session,
+        user_id=user.id,
+        event=EventCategory.pat_created,
+        request=request,
+    )
 
     try:
         await session.commit()
@@ -252,6 +261,13 @@ async def revoke_pat(
 
     pat.is_active = False
     pat.revoked_at = datetime.now(timezone.utc)
+
+    await log_event(
+        db=session,
+        user_id=user.id,
+        event=EventCategory.pat_revoked,
+        request=request,
+    )
 
     try:
         await session.commit()

@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from src.ml_server.models.user_auth_method import UserAuthMethod
+    from src.ml_server.models.audit_log import AuditLog
 
 
 class User(Base):
@@ -19,6 +20,10 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(254), unique=True, nullable=False)
     auth_methods: Mapped[list["UserAuthMethod"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+    audit_logs: Mapped[list["AuditLog"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
     )

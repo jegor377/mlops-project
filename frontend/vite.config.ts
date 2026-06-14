@@ -27,7 +27,11 @@ export default defineConfig({
             "/openapi.json": {
               target: BACKEND_URL,
               changeOrigin: true,
-            }
+            },
+            "/audit-log": {
+              target: BACKEND_URL,
+              changeOrigin: true,
+            },
           },
         },
       }

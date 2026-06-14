@@ -6,7 +6,7 @@ import { useAuth } from "../context/auth";
 
 type PillVariant = "default" | "green" | "red" | "blue" | "yellow";
 type FilterType = "all" | "active" | "inactive";
-type NavId = "overview" | "usage" | "requests" | "tokens" | "billing" | "settings";
+type NavId = "overview" | "usage" | "requests" | "tokens" | "billing" | "audit-log" | "settings";
 type ExpiryOption = "7 days" | "30 days" | "90 days" | "1 year" | "No expiration";
 
 interface Token {
@@ -114,6 +114,14 @@ const icons = {
   chevron: "M9 18l6-6-6-6",
   refresh: "M1 4v6h6M23 20v-6h-6M20.49 9A9 9 0 0 0 5.64 5.64L1 10M23 14l-4.64 4.36A9 9 0 0 1 3.51 15",
   alertCircle: "M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM12 8v4M12 16h.01",
+  auditLog: "M9 12l2 2 4-4M7 4H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2M9 4h6a1 1 0 0 1 0 2H9a1 1 0 0 1 0-2z",
+  login:       "M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3",
+  logout: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9",
+  chevronDown: "M6 9l6 6 6-6",
+  filter:      "M22 3H2l8 9.46V19l4 2v-8.54L22 3z",
+  clock: "M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM12 6v6l4 2",
+  key: "M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4",
+  user:        "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
   trendUp: "M23 6l-9.5 9.5-5-5L1 18M17 6h6v6",
 } as const;
 
@@ -167,7 +175,8 @@ const NAV: NavItem[] = [
   { id: "overview",  label: "Overview",      icon: "overview" },
   { id: "usage",     label: "Usage",         icon: "usage" },
   { id: "requests",  label: "Requests",      icon: "requests" },
-  { id: "tokens",    label: "Access Tokens", icon: "tokens" },
+  { id: "tokens", label: "Access Tokens", icon: "tokens" },
+  { id: "audit-log", label: "Audit Log", icon: "auditLog" },
   { id: "billing",   label: "Billing",       icon: "billing" },
   { id: "settings",  label: "Settings",      icon: "settings" },
 ];
@@ -961,6 +970,291 @@ function TokensPage() {
   );
 }
 
+// ── Audit Log page ─────────────────────────────────────────────────────────────
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+ 
+type AuditCategory = "all" | "pat" | "auth" | "account";
+ 
+type AuditEventType =
+  // PAT
+  | "pat.created"
+  | "pat.revoked"
+  // Auth
+  | "auth.login"
+  | "auth.login_failed"
+  | "auth.logout"
+  | "auth.oauth_login"
+  // Account
+  | "account.email_verified"
+  | "account.password_changed"
+  | "account.verification_resent";
+ 
+interface AuditLogEntry {
+  id: number;
+  event: AuditEventType;
+  ip: string | null;
+  user_agent: string | null;
+  metadata: Record<string, string> | null;
+  created_at: string;
+}
+ 
+interface AuditLogPage {
+  items: AuditLogEntry[];
+  total: number;
+  page: number;
+  size: number;
+}
+
+// ── Event config ──────────────────────────────────────────────────────────────
+ 
+type EventConfig = {
+  label: string;
+  icon: keyof typeof icons;
+  iconColor: string;
+  bgColor: string;
+  category: Exclude<AuditCategory, "all">;
+};
+ 
+const EVENT_CONFIG: Record<AuditEventType, EventConfig> = {
+  "pat.created":                { label: "Token created",            icon: "key",         iconColor: "#3b82f6", bgColor: "bg-blue-50",    category: "pat" },
+  "pat.revoked":                { label: "Token revoked",            icon: "key",         iconColor: "#ef4444", bgColor: "bg-red-50",     category: "pat" },
+  "auth.login":                 { label: "Signed in",                icon: "login",       iconColor: "#10b981", bgColor: "bg-emerald-50", category: "auth" },
+  "auth.login_failed":          { label: "Sign-in failed",           icon: "login",       iconColor: "#ef4444", bgColor: "bg-red-50",     category: "auth" },
+  "auth.logout":                { label: "Signed out",               icon: "logout",      iconColor: "#6b7280", bgColor: "bg-gray-100",   category: "auth" },
+  "auth.oauth_login":           { label: "OAuth sign-in",            icon: "login",       iconColor: "#8b5cf6", bgColor: "bg-violet-50",  category: "auth" },
+  "account.email_verified":     { label: "Email verified",           icon: "user",        iconColor: "#10b981", bgColor: "bg-emerald-50", category: "account" },
+  "account.password_changed":   { label: "Password changed",         icon: "shield",      iconColor: "#f59e0b", bgColor: "bg-amber-50",   category: "account" },
+  "account.verification_resent":{ label: "Verification email resent",icon: "user",        iconColor: "#6b7280", bgColor: "bg-gray-100",   category: "account" },
+};
+
+// ── Single entry row ──────────────────────────────────────────────────────────
+ 
+function AuditRow({ entry }: { entry: AuditLogEntry }) {
+  const [expanded, setExpanded] = useState(false);
+  const cfg = EVENT_CONFIG[entry.event] ?? {
+    label: entry.event,
+    icon: "shield" as const,
+    iconColor: "#6b7280",
+    bgColor: "bg-gray-100",
+    category: "account" as const,
+  };
+ 
+  const hasDetails = entry.ip || entry.user_agent || (entry.metadata && Object.keys(entry.metadata).length > 0);
+ 
+  return (
+    <div className={`border rounded-2xl transition-all duration-200 ${
+      expanded ? "border-gray-200 shadow-sm" : "border-gray-100 hover:border-gray-200"
+    } bg-white`}>
+      <button
+        onClick={() => hasDetails && setExpanded((v) => !v)}
+        className={`w-full flex items-center gap-4 px-5 py-4 text-left ${hasDetails ? "cursor-pointer" : "cursor-default"}`}
+      >
+        {/* Icon */}
+        <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${cfg.bgColor}`}>
+          <Icon d={icons[cfg.icon]} size={14} stroke={cfg.iconColor} />
+        </div>
+ 
+        {/* Label + timestamp */}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-gray-900">{cfg.label}</p>
+          <p className="text-xs text-gray-400 mono mt-0.5">{formatDate(entry.created_at)}</p>
+        </div>
+ 
+        {/* Relative time */}
+        <span className="text-xs text-gray-300 mono shrink-0 hidden sm:block">
+          {formatRelative(entry.created_at)}
+        </span>
+ 
+        {/* Expand chevron */}
+        {hasDetails && (
+          <Icon
+            d={icons.chevronDown}
+            size={14}
+            stroke="#d1d5db"
+            className={`shrink-0 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+          />
+        )}
+      </button>
+ 
+      {/* Expanded details */}
+      {expanded && hasDetails && (
+        <div className="border-t border-gray-100 px-5 py-4 bg-gray-50/50 rounded-b-2xl space-y-2">
+          {entry.ip && (
+            <div className="flex items-center gap-3 text-xs mono">
+              <span className="text-gray-400 w-24 shrink-0">IP address</span>
+              <span className="text-gray-700">{entry.ip}</span>
+            </div>
+          )}
+          {entry.user_agent && (
+            <div className="flex items-start gap-3 text-xs mono">
+              <span className="text-gray-400 w-24 shrink-0">User agent</span>
+              <span className="text-gray-500 break-all leading-relaxed">{entry.user_agent}</span>
+            </div>
+          )}
+          {entry.metadata && Object.entries(entry.metadata).map(([k, v]) => (
+            <div key={k} className="flex items-center gap-3 text-xs mono">
+              <span className="text-gray-400 w-24 shrink-0">{k}</span>
+              <span className="text-gray-700">{v}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+ 
+// ── Category filter pills ─────────────────────────────────────────────────────
+ 
+const CATEGORY_FILTERS: { id: AuditCategory; label: string }[] = [
+  { id: "all",     label: "All" },
+  { id: "pat",     label: "Tokens" },
+  { id: "auth",    label: "Auth" },
+  { id: "account", label: "Account" },
+];
+ 
+// ── Main component ────────────────────────────────────────────────────────────
+ 
+export function AuditLogPage() {
+  const [entries, setEntries] = useState<AuditLogEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [category, setCategory] = useState<AuditCategory>("all");
+  const [hasMore, setHasMore] = useState(false);
+  const [total, setTotal] = useState(0);
+  const pageRef = useRef(1);
+  const SIZE = 20;
+ 
+  const fetchEntries = useCallback(async (reset = false, cat = category) => {
+    setLoading(true);
+    setError(null);
+    const targetPage = reset ? 1 : pageRef.current;
+    try {
+      const params = new URLSearchParams({
+        page: String(targetPage),
+        size: String(SIZE),
+        ...(cat !== "all" ? { category: cat } : {}),
+      });
+      const res = await fetch(`/audit-log?${params}`, { credentials: "include" });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: AuditLogPage = await res.json();
+      setEntries((prev) => reset ? data.items : [...prev, ...data.items]);
+      setTotal(data.total);
+      setHasMore(data.items.length === SIZE);
+      pageRef.current = targetPage + 1;
+    } catch {
+      setError("Failed to load audit log. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, [category]);
+ 
+  useEffect(() => {
+    pageRef.current = 1;
+    fetchEntries(true, category);
+  }, [category]);
+ 
+  return (
+    <div className="max-w-3xl mx-auto py-10 px-8">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold tracking-tight text-gray-950 mb-1">Audit Log</h1>
+        <p className="text-sm text-gray-400 font-light leading-relaxed max-w-md">
+          A complete record of security-relevant events on your account — token changes, sign-ins, and account updates.
+        </p>
+      </div>
+ 
+      {/* Total count */}
+      {!loading && !error && (
+        <div className="flex items-center gap-2 mb-5">
+          <Icon d={icons.clock} size={13} stroke="#9ca3af" />
+          <span className="text-xs text-gray-400 mono">{total} events recorded</span>
+        </div>
+      )}
+ 
+      {/* Category filter */}
+      <div className="flex items-center gap-1 mb-6 bg-gray-50 rounded-xl p-1 w-fit border border-gray-100">
+        {CATEGORY_FILTERS.map((f) => (
+          <button
+            key={f.id}
+            onClick={() => setCategory(f.id)}
+            className={`text-xs px-3 py-1.5 rounded-lg mono transition-all duration-150 cursor-pointer ${
+              category === f.id
+                ? "bg-white text-gray-900 shadow-sm font-medium border border-gray-200"
+                : "text-gray-400 hover:text-gray-600"
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+ 
+      {/* States */}
+      {loading && entries.length === 0 && (
+        <div className="flex items-center justify-center py-16 gap-3 text-gray-400">
+          <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          <span className="text-sm mono">Loading…</span>
+        </div>
+      )}
+ 
+      {!loading && error && (
+        <div className="flex items-center justify-between bg-red-50 border border-red-100 rounded-xl px-5 py-4">
+          <div className="flex items-center gap-2">
+            <Icon d={icons.alertCircle} size={15} stroke="#ef4444" />
+            <p className="text-sm text-red-600">{error}</p>
+          </div>
+          <button
+            onClick={() => fetchEntries(true, category)}
+            className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 mono cursor-pointer"
+          >
+            <Icon d={icons.refresh} size={13} />
+            Retry
+          </button>
+        </div>
+      )}
+ 
+      {!loading && !error && entries.length === 0 && (
+        <div className="text-center py-16">
+          <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
+            <Icon d={icons.shield} size={20} stroke="#d1d5db" />
+          </div>
+          <p className="text-sm font-medium text-gray-300 mono">No events yet</p>
+        </div>
+      )}
+ 
+      {/* Entries */}
+      <div className="space-y-2">
+        {entries.map((entry) => (
+          <AuditRow key={entry.id} entry={entry} />
+        ))}
+      </div>
+ 
+      {/* Load more */}
+      {hasMore && !loading && (
+        <button
+          onClick={() => fetchEntries(false)}
+          className="w-full mt-4 text-sm text-gray-500 hover:text-gray-700 cursor-pointer transition-colors mono flex items-center justify-center gap-1.5"
+        >
+          Load more
+        </button>
+      )}
+ 
+      {/* Inline spinner when loading next page */}
+      {loading && entries.length > 0 && (
+        <div className="flex justify-center mt-4">
+          <svg className="w-4 h-4 animate-spin text-gray-400" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Overview page ─────────────────────────────────────────────────────────────
 
 function OverviewPage() {
@@ -1095,6 +1389,7 @@ export default function Dashboard() {
   const content: Partial<Record<NavId, ReactNode>> = {
     overview: <OverviewPage />,
     tokens: <TokensPage />,
+    "audit-log": <AuditLogPage />,
   };
 
   const activeNav = NAV.find((n) => n.id === active);

@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from logging import Logger
 from datetime import datetime, timezone, timedelta
-from fastapi import Response, HTTPException
+from fastapi import Response
 import secrets
 
 from src.ml_server.conf.settings import Settings
@@ -20,18 +20,21 @@ async def invalidate_session_by_user_id(
     existing_session = result.scalar_one_or_none()
     if existing_session:
         await session.delete(existing_session)
-        await session.commit()
+        return True
+    return False
 
 
 async def invalidate_session_by_session_token(
     session: AsyncSession,
     token: str,
-) -> None:
+) -> int:
     result = await session.execute(select(UserSession).where(UserSession.token == token))
     user_session = result.scalar_one_or_none()
     if user_session:
         await session.delete(user_session)
-        await session.commit()
+        await session.flush()
+        return user_session.user_id
+    return -1
 
 
 async def issue_session_token(
@@ -50,13 +53,6 @@ async def issue_session_token(
         expires_at=expires_at,
     )
     session.add(session_record)
-
-    try:
-        await session.commit()
-    except Exception as e:
-        await session.rollback()
-        logger.error(f"Failed to persist session for user {user_id}: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
 
     return token, expires_at
 
