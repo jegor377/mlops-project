@@ -20,17 +20,28 @@ class AuditCategory(str, enum.Enum):
     account = "account"
 
 
+class EventCategory(str, enum.Enum):
+    pat_created                 = "pat.created"
+    pat_revoked                 = "pat.revoked"
+    auth_login                  = "auth.login"
+    auth_login_failed           = "auth.login_failed"
+    auth_logout                 = "auth.logout"
+    auth_oauth_login            = "auth.oauth_login"
+    account_email_verified      = "account.email_verified"
+    account_password_changed    = "account.password_changed"
+    account_verification_resent = "account.verification_resent"
+
 # Mapping: event string → category
 EVENT_CATEGORY: dict[str, AuditCategory] = {
-    "pat.created":                 AuditCategory.pat,
-    "pat.revoked":                 AuditCategory.pat,
-    "auth.login":                  AuditCategory.auth,
-    "auth.login_failed":           AuditCategory.auth,
-    "auth.logout":                 AuditCategory.auth,
-    "auth.oauth_login":            AuditCategory.auth,
-    "account.email_verified":      AuditCategory.account,
-    "account.password_changed":    AuditCategory.account,
-    "account.verification_resent": AuditCategory.account,
+    EventCategory.pat_created:                 AuditCategory.pat,
+    EventCategory.pat_revoked:                 AuditCategory.pat,
+    EventCategory.auth_login:                  AuditCategory.auth,
+    EventCategory.auth_login_failed:           AuditCategory.auth,
+    EventCategory.auth_logout:                 AuditCategory.auth,
+    EventCategory.auth_oauth_login:            AuditCategory.auth,
+    EventCategory.account_email_verified:      AuditCategory.account,
+    EventCategory.account_password_changed:    AuditCategory.account,
+    EventCategory.account_verification_resent: AuditCategory.account,
 }
 
 
@@ -41,7 +52,9 @@ class AuditLog(Base):
     user_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    event: Mapped[str] = mapped_column(String(64), nullable=False)
+    event: Mapped[EventCategory] = mapped_column(
+        Enum(EventCategory), nullable=False
+    )
     category: Mapped[AuditCategory] = mapped_column(
         Enum(AuditCategory), nullable=False, index=True
     )
