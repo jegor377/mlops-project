@@ -27,7 +27,7 @@ export default defineConfig({
             "/openapi.json": {
               target: BACKEND_URL,
               changeOrigin: true,
-            }
+            },
           },
         },
       }
