@@ -38,7 +38,7 @@ async def check_rate_limit(
     """
     redis: Redis = _redis(request)
     key = f"rl:{pat.user_id}"
-    limit: int = settings.daily_request_limit  # add to Settings, e.g. 1000
+    limit: int = settings.daily_request_limit
 
     pipe = redis.pipeline()
     pipe.incr(key)
