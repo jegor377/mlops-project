@@ -21,6 +21,7 @@ from src.ml_server.schemas.audit_log import (
 )
 from src.ml_server.services.request_log import record_request
 
+
 router = APIRouter()
 
 
