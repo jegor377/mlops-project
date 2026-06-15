@@ -11,6 +11,7 @@ from src.ml_server.conf.settings import Settings
 from src.ml_server.routes.general import router as general_router
 from src.ml_server.routes.auth import router as auth_router
 from src.ml_server.routes.pat import router as pat_router
+from src.ml_server.routes.requests import router as requests_router
 from src.ml_server.services.ml_model import Model
 
 
@@ -78,4 +79,5 @@ def create_app(settings: Settings) -> FastAPI:
     app.include_router(general_router)
     app.include_router(auth_router)
     app.include_router(pat_router)
+    app.include_router(requests_router)
     return app
