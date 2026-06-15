@@ -94,6 +94,10 @@ interface APIRequestStats {
   spark: number[];  // last 20 days, absolute counts
 }
 
+interface PageProps {
+  onNavigate: (page: NavId) => void;
+}
+
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
 interface IconProps extends SVGProps<SVGSVGElement> {
@@ -755,7 +759,7 @@ function AuditLogPage() {
 
 // ── Overview page ─────────────────────────────────────────────────────────────
 
-function OverviewPage() {
+function OverviewPage({ onNavigate }: PageProps) {
   const [stats, setStats] = useState<APIRequestStats | null>(null);
   const [recentRequests, setRecentRequests] = useState<APIRequestLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -849,7 +853,7 @@ function OverviewPage() {
         <div className="border border-gray-100 rounded-2xl p-5 bg-white">
           <div className="flex items-center justify-between mb-4">
             <p className="text-xs text-gray-400 mono">Recent requests</p>
-            <button className="text-xs text-gray-400 mono hover:text-gray-600 transition-colors cursor-pointer">View all →</button>
+            <button onClick={() => onNavigate("requests")} className="text-xs text-gray-400 mono hover:text-gray-600 transition-colors cursor-pointer">View all →</button>
           </div>
           {recentRequests.length === 0
             ? <p className="text-xs text-gray-300 mono py-6 text-center">No requests yet</p>
@@ -991,7 +995,7 @@ export default function Dashboard() {
   const [active, setActive] = useState<NavId>("overview");
 
   const content: Partial<Record<NavId, ReactNode>> = {
-    overview:  <OverviewPage />,
+    overview:  <OverviewPage onNavigate={setActive} />,
     requests:  <RequestsPage />,
     tokens:    <TokensPage />,
     "audit-log": <AuditLogPage />,
