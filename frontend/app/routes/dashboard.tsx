@@ -6,9 +6,8 @@ import { useAuth } from "../context/auth";
 
 type PillVariant = "default" | "green" | "red" | "blue" | "yellow";
 type FilterType = "all" | "active" | "inactive";
-type NavId = "overview" | "usage" | "requests" | "tokens" | "billing" | "audit-log" | "settings";
+type NavId = "overview" | "tokens" | "billing" | "audit-log" | "settings";
 type ExpiryOption = "7 days" | "30 days" | "90 days" | "1 year" | "No expiration";
-type StatusFilter = "all" | "2xx" | "4xx" | "5xx";
 
 interface Token {
   id: number;
@@ -68,34 +67,12 @@ interface FilterTypeItem {
   label: string;
 }
 
-interface APIRequestLog {
-  id: number;
-  method: string;
-  path: string;
-  status_code: number;
-  latency_ms: number;
-  ip: string | null;
-  created_at: string;
-}
-
-interface APIRequestLogPage {
-  items: APIRequestLog[];
-  total: number;
-  page: number;
-  size: number;
-}
-
 interface APIRequestStats {
   requests_today: number;
   daily_limit: number;
   requests_this_month: number;
   avg_latency_ms: number | null;
-  error_rate: number | null;
-  spark: number[];  // last 20 days, absolute counts
-}
-
-interface PageProps {
-  onNavigate: (page: NavId) => void;
+  latency_count: number;
 }
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -116,8 +93,6 @@ const Icon = ({ d, size = 16, stroke = "currentColor", fill = "none", ...p }: Ic
 
 const icons = {
   overview:     "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",
-  usage:        "M18 20V10M12 20V4M6 20v-6",
-  requests:     "M9 12l2 2 4-4M7 4H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2M9 4h6a1 1 0 0 1 0 2H9a1 1 0 0 1 0-2z",
   tokens:       "M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4",
   billing:      "M3 10h18M7 15h.01M11 15h2M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z",
   settings:     "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z",
@@ -204,8 +179,6 @@ const EXPIRY_OPTIONS: ExpiryOption[] = ["7 days", "30 days", "90 days", "1 year"
 
 const NAV: NavItem[] = [
   { id: "overview",  label: "Overview",      icon: "overview" },
-  { id: "usage",     label: "Usage",         icon: "usage" },
-  { id: "requests",  label: "Requests",      icon: "requests" },
   { id: "tokens",    label: "Access Tokens", icon: "tokens" },
   { id: "audit-log", label: "Audit Log",     icon: "auditLog" },
   { id: "billing",   label: "Billing",       icon: "billing" },
@@ -759,9 +732,8 @@ function AuditLogPage() {
 
 // ── Overview page ─────────────────────────────────────────────────────────────
 
-function OverviewPage({ onNavigate }: PageProps) {
+function OverviewPage() {
   const [stats, setStats] = useState<APIRequestStats | null>(null);
-  const [recentRequests, setRecentRequests] = useState<APIRequestLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -769,15 +741,12 @@ function OverviewPage({ onNavigate }: PageProps) {
     const fetchAll = async () => {
       setLoading(true); setError(null);
       try {
-        const [statsRes, recentRes] = await Promise.all([
+        const [statsRes] = await Promise.all([
           fetch("/api/requests/stats", { credentials: "include" }),
-          fetch("/api/requests?size=5", { credentials: "include" }),
         ]);
-        if (!statsRes.ok || !recentRes.ok) throw new Error("Failed to fetch");
+        if (!statsRes.ok) throw new Error("Failed to fetch");
         const statsData: APIRequestStats = await statsRes.json();
-        const recentData: APIRequestLogPage = await recentRes.json();
         setStats(statsData);
-        setRecentRequests(recentData.items);
       } catch { setError("Failed to load overview data."); } finally { setLoading(false); }
     };
     fetchAll();
@@ -795,19 +764,17 @@ function OverviewPage({ onNavigate }: PageProps) {
   );
 
   const usedPct = stats.daily_limit > 0 ? Math.round((stats.requests_today / stats.daily_limit) * 100) : 0;
-  const maxSpark = Math.max(...stats.spark, 1);
   const statCards = [
     { label: "Requests today",    value: stats.requests_today.toLocaleString(),                                     sub: `${(stats.daily_limit - stats.requests_today).toLocaleString()} remaining` },
     { label: "Requests this month", value: stats.requests_this_month.toLocaleString(),                              sub: "calendar month" },
-    { label: "Avg latency",       value: stats.avg_latency_ms != null ? `${stats.avg_latency_ms} ms` : "—",        sub: "last 100 requests", subGreen: true },
-    { label: "Error rate",        value: stats.error_rate != null ? `${(stats.error_rate * 100).toFixed(1)}%` : "—", sub: "last 100 requests" },
+    { label: "Avg latency",       value: stats.avg_latency_ms != null ? `${stats.avg_latency_ms} ms` : "—",        sub: `last ${stats.latency_count} requests`, subGreen: true },
   ];
 
   return (
     <div className="max-w-4xl mx-auto py-10 px-8">
       <h1 className="text-2xl font-semibold tracking-tight text-gray-950 mb-8">Overview</h1>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
         {statCards.map(({ label, value, sub, subGreen }) => (
           <div key={label} className="border border-gray-100 rounded-2xl p-5 bg-white">
             <p className="text-xs text-gray-400 mono mb-2">{label}</p>
@@ -832,145 +799,6 @@ function OverviewPage({ onNavigate }: PageProps) {
         </div>
         <p className="text-xs text-gray-400 mono mt-2">Resets at midnight UTC</p>
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="border border-gray-100 rounded-2xl p-5 bg-white">
-          <p className="text-xs text-gray-400 mono mb-4">Requests — last 20 days</p>
-          {stats.spark.every((v) => v === 0)
-            ? <p className="text-xs text-gray-300 mono py-8 text-center">No requests yet</p>
-            : (<>
-                <div className="flex items-end gap-1 h-24">
-                  {stats.spark.map((v, i) => (
-                    <div key={i} className="flex-1 rounded-sm transition-all"
-                      style={{ height: `${Math.round((v / maxSpark) * 100)}%`, background: i === stats.spark.length - 1 ? "#0f0f0f" : "#e5e7eb" }} />
-                  ))}
-                </div>
-                <div className="flex justify-between mt-2 text-xs text-gray-300 mono"><span>20d ago</span><span>Today</span></div>
-              </>)
-          }
-        </div>
-
-        <div className="border border-gray-100 rounded-2xl p-5 bg-white">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-xs text-gray-400 mono">Recent requests</p>
-            <button onClick={() => onNavigate("requests")} className="text-xs text-gray-400 mono hover:text-gray-600 transition-colors cursor-pointer">View all →</button>
-          </div>
-          {recentRequests.length === 0
-            ? <p className="text-xs text-gray-300 mono py-6 text-center">No requests yet</p>
-            : (<div className="space-y-2.5">
-                {recentRequests.map((r) => (
-                  <div key={r.id} className="flex items-center gap-2 text-xs mono">
-                    <span className={`w-8 text-center font-medium shrink-0 ${statusColor(r.status_code)}`}>{r.status_code}</span>
-                    <span className="flex-1 text-gray-500 truncate">{r.method} {r.path}</span>
-                    <span className="text-gray-400 shrink-0">{r.latency_ms} ms</span>
-                    <span className="text-gray-300 shrink-0 w-16 text-right">{formatRelative(r.created_at)}</span>
-                  </div>
-                ))}
-              </div>)
-          }
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Requests page ─────────────────────────────────────────────────────────────
-
-const STATUS_FILTERS: { id: StatusFilter; label: string }[] = [
-  { id: "all", label: "All" },
-  { id: "2xx", label: "2xx" },
-  { id: "4xx", label: "4xx" },
-  { id: "5xx", label: "5xx" },
-];
-
-function RequestsPage() {
-  const [requests, setRequests] = useState<APIRequestLog[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [hasMore, setHasMore] = useState(false);
-  const [total, setTotal] = useState(0);
-  const pageRef = useRef(1);
-  const SIZE = 20;
-
-  const fetchRequests = useCallback(async (reset = false, sf = statusFilter) => {
-    setLoading(true); setError(null);
-    const targetPage = reset ? 1 : pageRef.current;
-    try {
-      const params = new URLSearchParams({ page: String(targetPage), size: String(SIZE), ...(sf !== "all" ? { status: sf } : {}) });
-      const res = await fetch(`/api/requests?${params}`, { credentials: "include" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: APIRequestLogPage = await res.json();
-      setRequests((prev) => reset ? data.items : [...prev, ...data.items]);
-      setTotal(data.total); setHasMore(data.items.length === SIZE);
-      pageRef.current = targetPage + 1;
-    } catch { setError("Failed to load requests. Please try again."); } finally { setLoading(false); }
-  }, [statusFilter]);
-
-  useEffect(() => { pageRef.current = 1; fetchRequests(true, statusFilter); }, [statusFilter]);
-
-  return (
-    <div className="max-w-3xl mx-auto py-10 px-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-gray-950 mb-1">Requests</h1>
-        <p className="text-sm text-gray-400 font-light leading-relaxed max-w-md">Last {SIZE} requests per page. Older entries are pruned automatically.</p>
-      </div>
-
-      {!loading && !error && (
-        <div className="flex items-center gap-2 mb-5"><Icon d={icons.clock} size={13} stroke="#9ca3af" /><span className="text-xs text-gray-400 mono">{total} entries stored</span></div>
-      )}
-
-      <div className="flex items-center gap-1 mb-6 bg-gray-50 rounded-xl p-1 w-fit border border-gray-100">
-        {STATUS_FILTERS.map((f) => (
-          <button key={f.id} onClick={() => setStatusFilter(f.id)}
-            className={`text-xs px-3 py-1.5 rounded-lg mono transition-all duration-150 cursor-pointer ${statusFilter === f.id ? "bg-white text-gray-900 shadow-sm font-medium border border-gray-200" : "text-gray-400 hover:text-gray-600"}`}>
-            {f.label}
-          </button>
-        ))}
-      </div>
-
-      {loading && requests.length === 0 && <Spinner />}
-
-      {!loading && error && (
-        <div className="flex items-center justify-between bg-red-50 border border-red-100 rounded-xl px-5 py-4">
-          <div className="flex items-center gap-2"><Icon d={icons.alertCircle} size={15} stroke="#ef4444" /><p className="text-sm text-red-600">{error}</p></div>
-          <button onClick={() => fetchRequests(true, statusFilter)} className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 mono cursor-pointer"><Icon d={icons.refresh} size={13} />Retry</button>
-        </div>
-      )}
-
-      {!loading && !error && requests.length === 0 && (
-        <div className="text-center py-16">
-          <div className="w-12 h-12 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3"><Icon d={icons.requests} size={20} stroke="#d1d5db" /></div>
-          <p className="text-sm font-medium text-gray-300 mono">No requests yet</p>
-        </div>
-      )}
-
-      {!loading && !error && requests.length > 0 && (
-        <div className="border border-gray-100 rounded-2xl bg-white overflow-hidden">
-          {/* Table header */}
-          <div className="grid grid-cols-[60px_1fr_80px_90px_120px] gap-3 px-5 py-3 border-b border-gray-100 bg-gray-50/50">
-            {["Status", "Endpoint", "Latency", "IP", "Time"].map((h) => (
-              <span key={h} className="text-xs text-gray-400 mono uppercase tracking-widest">{h}</span>
-            ))}
-          </div>
-          <div className="divide-y divide-gray-50">
-            {requests.map((r) => (
-              <div key={r.id} className="grid grid-cols-[60px_1fr_80px_90px_120px] gap-3 px-5 py-3 hover:bg-gray-50/50 transition-colors">
-                <span className={`text-xs font-medium mono ${statusColor(r.status_code)}`}>{r.status_code}</span>
-                <span className="text-xs text-gray-600 mono truncate">{r.method} {r.path}</span>
-                <span className="text-xs text-gray-400 mono">{r.latency_ms} ms</span>
-                <span className="text-xs text-gray-300 mono truncate">{r.ip ?? "—"}</span>
-                <span className="text-xs text-gray-300 mono">{formatDateTime(r.created_at)}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {hasMore && !loading && (
-        <button onClick={() => fetchRequests(false)} className="w-full mt-4 text-sm text-gray-500 hover:text-gray-700 cursor-pointer transition-colors mono flex items-center justify-center gap-1.5">Load more</button>
-      )}
-      {loading && requests.length > 0 && (<div className="flex justify-center mt-4"><svg className="w-4 h-4 animate-spin text-gray-400" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg></div>)}
     </div>
   );
 }
@@ -995,8 +823,7 @@ export default function Dashboard() {
   const [active, setActive] = useState<NavId>("overview");
 
   const content: Partial<Record<NavId, ReactNode>> = {
-    overview:  <OverviewPage onNavigate={setActive} />,
-    requests:  <RequestsPage />,
+    overview:  <OverviewPage />,
     tokens:    <TokensPage />,
     "audit-log": <AuditLogPage />,
   };
