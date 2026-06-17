@@ -16,16 +16,26 @@ tasks:
     watch: true
     cmds:
       - kubectl -n ml-server-dev port-forward svc/mailpit 8026:8025
+  port-forward-redis:
+    desc: "Port forward the Redis service to localhost"
+    watch: true
+    cmds:
+      - kubectl -n redis-system port-forward svc/bitnami-redis-master 6379
   port-forward:
     desc: "Port forward multiple services to localhost"
     deps:
       - port-forward-traefik
       - port-forward-psql
       - port-forward-mailpit
+      - port-forward-redis
   apply-dev-resources:
     desc: "Apply development resources to the cluster"
     cmds:
       - kubectl apply -k services/ml_server/overlays/dev
+      - |
+        kubectl get secret bitnami-redis -n redis-system -o yaml \
+        | sed 's/namespace: redis-system/namespace: ml-server-dev/' \
+        | kubectl apply -n ml-server-dev -f -
       - kubectl apply -k services/frontend/overlays/dev
   delete-dev-resources:
     desc: "Delete development resources from the cluster"

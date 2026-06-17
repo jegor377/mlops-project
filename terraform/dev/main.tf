@@ -77,3 +77,13 @@ resource "helm_release" "cnpg" {
   namespace        = "cloudnative-pg-system"
   # wait             = false
 }
+
+resource "helm_release" "redis" {
+  depends_on = [ kind_cluster.default ]
+  name = "bitnami"
+  repository = "https://charts.bitnami.com/bitnami"
+  chart = "redis"
+  version = "27.0.10"
+  create_namespace = true
+  namespace = "redis-system"
+}
