@@ -106,7 +106,7 @@ async def test_predict_ratelimit_is_per_user(client, db_session, app, test_setti
     _, token1 = await make_pat(db_session, user1, scopes=["inference:basic"])
     _, token2 = await make_pat(db_session, user2, scopes=["inference:basic"])
 
-    await app.state.redis.set(f"rl:{user1.id}", test_settings.daily_request_limit)
+    await app.state.redis.set(f"rt:{user1.id}", test_settings.daily_request_limit)
 
     resp1 = await client.post(
         "/api/predict", json={"text": "x"},
