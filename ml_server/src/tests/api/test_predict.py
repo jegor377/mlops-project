@@ -85,7 +85,7 @@ async def test_predict_returns_429_when_limit_exceeded(client, db_session, app, 
     user = await make_classic_user(db_session)
     _, raw_token = await make_pat(db_session, user, scopes=["inference:basic"])
 
-    await app.state.redis.set(f"rl:{user.id}", test_settings.daily_request_limit)
+    await app.state.redis.set(f"rt:{user.id}", test_settings.daily_request_limit)
 
     resp = await client.post(
         "/api/predict",
