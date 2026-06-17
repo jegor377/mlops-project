@@ -33,6 +33,10 @@ spec:
               mountPath: /run/secrets/oauth_state_session_secret_key
               subPath: data
               readOnly: true
+            - name: redis-password
+              mountPath: /run/secrets/redis_password
+              subPath: redis-password
+              readOnly: true
             - name: tmp
               mountPath: /tmp
           env:
@@ -45,6 +49,8 @@ spec:
                 key: uri
           - name: LOAD_MODEL
             value: "true"
+          - name: REDIS_HOST
+            value: bitnami-redis-master.redis-system.svc.cluster.local
           readinessProbe:
             httpGet:
               path: /api/ping
@@ -84,6 +90,9 @@ spec:
         - name: oauth-state-session-secret-key
           secret:
             secretName: oauth-state-session-secret-key
+        - name: redis-password
+          secret:
+            secretName: bitnami-redis
   strategy:
     canary: #Indicates that the rollout should use the Canary strategy
       maxSurge: '25%'

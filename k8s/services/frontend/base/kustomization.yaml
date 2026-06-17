@@ -3,5 +3,4 @@ kind: Kustomization
 resources:
   - Rollout.yaml
   - Service.yaml
-  - Gateway.yaml
   - HTTPRoute.yaml

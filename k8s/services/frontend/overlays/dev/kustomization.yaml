@@ -5,12 +5,6 @@ resources:
   - ../../base
   - manifests/Namespace.yaml
 patches:
-  - path: patches/Gateway.yaml
-    target:
-      group: gateway.networking.k8s.io
-      version: v1
-      kind: Gateway
-      name: frontend-gw
   - path: patches/Rollout.yaml
     target:
       group: argoproj.io

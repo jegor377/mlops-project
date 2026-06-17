@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: common-gw-staging
+  namespace: argocd
+spec:
+  project: platform
+  source:
+    repoURL: https://github.com/jegor377/mlops-project.git
+    path: k8s/services/common-gw/overlays/staging
+    targetRevision: main
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: common-gw-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

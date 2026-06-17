@@ -4,7 +4,8 @@ metadata:
   name: frontend-route
 spec:
   parentRefs:
-  - name: frontend-gw
+  - name: common-gw
+    namespace: common-gw
   hostnames:
   - ml-server-production.com
   rules:

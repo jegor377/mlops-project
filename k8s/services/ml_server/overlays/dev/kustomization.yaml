@@ -7,12 +7,6 @@ resources:
   - manifests/MailpitDeployment.yaml
   - manifests/MailpitService.yaml
 patches:
-  - path: patches/Gateway.yaml
-    target:
-      group: gateway.networking.k8s.io
-      version: v1
-      kind: Gateway
-      name: ml-server-gw
   - path: patches/Rollout.yaml
     target:
       group: argoproj.io
