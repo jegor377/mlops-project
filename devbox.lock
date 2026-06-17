@@ -892,6 +892,55 @@
         }
       }
     },
+    "redis@latest": {
+      "last_modified": "2026-05-29T05:01:12Z",
+      "plugin_version": "0.0.2",
+      "resolved": "github:NixOS/nixpkgs/e9a7635a57597d9754eccebdfc7045e6c8600e6b#redis",
+      "source": "devbox-search",
+      "version": "8.8.0",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/k09zvy10hm4fzml8wmfw8qw66pkipjjd-redis-8.8.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/k09zvy10hm4fzml8wmfw8qw66pkipjjd-redis-8.8.0"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/4n6678b29rxi4r4cfbgwq1pq17cpgard-redis-8.8.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/4n6678b29rxi4r4cfbgwq1pq17cpgard-redis-8.8.0"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/2y5s46k7x33pvc3wxdlyzwf135ahrvx2-redis-8.8.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/2y5s46k7x33pvc3wxdlyzwf135ahrvx2-redis-8.8.0"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/zkd0ckjz5v4izrbb719rhw6y7bb6z4sp-redis-8.8.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/zkd0ckjz5v4izrbb719rhw6y7bb6z4sp-redis-8.8.0"
+        }
+      }
+    },
     "terraform@latest": {
       "last_modified": "2026-02-23T15:40:43Z",
       "resolved": "github:NixOS/nixpkgs/80d901ec0377e19ac3f7bb8c035201e2e098cc97#terraform",
