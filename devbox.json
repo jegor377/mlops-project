@@ -19,7 +19,8 @@
     "path:gcloud#google-cloud-sdk",
     "cloud-provider-kind@latest",
     "nodejs@latest",
-    "postgresql@latest"
+    "postgresql@latest",
+    "redis@latest"
   ],
   "shell": {
     "init_hook": [

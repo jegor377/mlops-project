@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     frontend_hostname: str
     oauth_state_session_secret_key: str
     db_uri: PostgresDsn
+    redis_host: str = '127.0.0.1'
+    redis_port: int = 6379
+    redis_password: str = ''
     load_model: bool
     pool_size: int = 5
     max_overflow: int = 10
@@ -57,6 +60,7 @@ class Settings(BaseSettings):
     pat_count_limit: int = 50
     google_oauth2_creds: GoogleOAuth2Credentials
     github_oauth2_creds: GitHubOAuthCredentials
+    daily_request_limit: int = 1000
 
     model_config = SettingsConfigDict(
         env_file='.env',
@@ -93,3 +97,7 @@ class Settings(BaseSettings):
             "postgresql+asyncpg://",
             1,
         )
+
+    @property
+    def redis_uri(self) -> str:
+        return f"redis://:{self.redis_password}@{self.redis_host}:{self.redis_port}/0"

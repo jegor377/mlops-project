@@ -4,7 +4,8 @@ metadata:
   name: ml-server-route
 spec:
   parentRefs:
-  - name: ml-server-gw
+  - name: common-gw
+    namespace: common-gw
   hostnames:
   - ml-server-production.com
   rules:
@@ -15,6 +16,12 @@ spec:
       - path:
           type: PathPrefix
           value: /auth/
+      - path:
+          type: PathPrefix
+          value: /docs/
+      - path:
+          type: Exact
+          value: /openapi.json
     backendRefs:
     - name: ml-server-svc
       port: 8000

@@ -1,15 +1,17 @@
+import logging
+
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from authlib.integrations.starlette_client import OAuth
 from starlette.middleware.sessions import SessionMiddleware
-import logging
+from redis.asyncio import Redis
 
 from src.ml_server.conf.settings import Settings
 from src.ml_server.routes.general import router as general_router
 from src.ml_server.routes.auth import router as auth_router
 from src.ml_server.routes.pat import router as pat_router
-from src.ml_server.routes.audit_log import router as audit_log_router
+from src.ml_server.routes.requests import router as requests_router
 from src.ml_server.services.ml_model import Model
 
 
@@ -52,6 +54,8 @@ def create_app(settings: Settings) -> FastAPI:
         )
         app.state.engine = engine
         app.state.db = async_sessionmaker(engine, expire_on_commit=False)
+        redis = Redis.from_url(settings.redis_uri, decode_responses=True)
+        app.state.redis = redis
         oauth = OAuth()
         configure_google_oauth(oauth, settings)
         configure_github_oauth(oauth, settings)
@@ -75,5 +79,5 @@ def create_app(settings: Settings) -> FastAPI:
     app.include_router(general_router)
     app.include_router(auth_router)
     app.include_router(pat_router)
-    app.include_router(audit_log_router)
+    app.include_router(requests_router)
     return app
