@@ -6,7 +6,6 @@ from pydantic_settings import (
 from pydantic import (
     BaseModel,
     PostgresDsn,
-    RedisDsn,
 )
 from typing import Literal
 
@@ -48,7 +47,9 @@ class Settings(BaseSettings):
     frontend_hostname: str
     oauth_state_session_secret_key: str
     db_uri: PostgresDsn
-    redis_uri: RedisDsn
+    redis_host: str = '127.0.0.1'
+    redis_port: int = 6379
+    redis_password: str = ''
     load_model: bool
     pool_size: int = 5
     max_overflow: int = 10
@@ -96,3 +97,7 @@ class Settings(BaseSettings):
             "postgresql+asyncpg://",
             1,
         )
+
+    @property
+    def redis_uri(self) -> str:
+        return f"redis://:{self.redis_password}@{self.redis_host}:{self.redis_port}/0"

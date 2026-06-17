@@ -28,10 +28,6 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan",
     )
-    request_logs: Mapped[list["ApiRequestLog"]] = relationship(
-        back_populates="user",
-        cascade="all, delete-orphan",
-    )
 
     is_active: Mapped[bool] = mapped_column(
         Boolean, server_default=text("false"), nullable=False

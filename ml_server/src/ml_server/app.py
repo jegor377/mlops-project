@@ -54,7 +54,7 @@ def create_app(settings: Settings) -> FastAPI:
         )
         app.state.engine = engine
         app.state.db = async_sessionmaker(engine, expire_on_commit=False)
-        redis = Redis.from_url(str(settings.redis_uri), decode_responses=True)
+        redis = Redis.from_url(settings.redis_uri, decode_responses=True)
         app.state.redis = redis
         oauth = OAuth()
         configure_google_oauth(oauth, settings)

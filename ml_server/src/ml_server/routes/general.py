@@ -19,7 +19,7 @@ from src.ml_server.schemas.llm import LLMRequest, LLMResponse
 from src.ml_server.schemas.audit_log import (
     AuditLogEntryResponse, AuditLogPageResponse
 )
-from src.ml_server.services.request_log import record_request
+from src.ml_server.services.predict_metrics import record_req_metrics
 
 
 router = APIRouter()
@@ -41,23 +41,13 @@ async def predict(
     else:
         prediction = "This is a dummy prediction. Replace with actual model inference logic."
 
-    latency_ms = int((time.monotonic() - t0) * 1000)
-
-    forwarded = req.headers.get("X-Forwarded-For")
-    ip = forwarded.split(",")[0].strip() if forwarded else (
-        req.client.host if req.client else None
-    )
+    latency_ms: int = int((time.monotonic() - t0) * 1000)
 
     background_tasks.add_task(
-        record_request,
-        session,
+        record_req_metrics,
+        redis=req.app.state.redis,
         user_id=pat.user_id,
-        pat_id=pat.id,
-        method="POST",
-        path="/api/predict",
-        status_code=200,
         latency_ms=latency_ms,
-        ip=ip,
     )
 
     return Response(
