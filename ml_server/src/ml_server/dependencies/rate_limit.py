@@ -27,7 +27,7 @@ def _next_midnight() -> datetime:
 
 def first_day_of_next_month() -> datetime:
     now = datetime.now(timezone.utc)
-    
+
     if now.month == 12:
         next_month = 1
         next_year = now.year + 1
@@ -36,13 +36,13 @@ def first_day_of_next_month() -> datetime:
         next_year = now.year
 
     return datetime(
-        year=next_year, 
-        month=next_month, 
-        day=1, 
-        hour=0, 
-        minute=0, 
-        second=0, 
-        microsecond=0, 
+        year=next_year,
+        month=next_month,
+        day=1,
+        hour=0,
+        minute=0,
+        second=0,
+        microsecond=0,
         tzinfo=timezone.utc
     )
 
@@ -61,15 +61,15 @@ async def check_rate_limit(
     limit: int = settings.daily_request_limit
 
     pipe = redis.pipeline()
-    
+
     requests_today_key = f"rt:{pat.user_id}"
     pipe.incr(requests_today_key)
     pipe.expireat(requests_today_key, _next_midnight())
-    
+
     requests_this_month_key = f"rtm:{pat.user_id}"
     pipe.incr(requests_this_month_key)
     pipe.expireat(requests_this_month_key, first_day_of_next_month())
-    
+
     count, *_ = await pipe.execute()
 
     remaining = max(0, limit - count)

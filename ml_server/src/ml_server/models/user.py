@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.ml_server.models.user_auth_method import UserAuthMethod
     from src.ml_server.models.audit_log import AuditLog
-    from src.ml_server.models.request_log import ApiRequestLog
 
 
 class User(Base):

@@ -1,5 +1,4 @@
 """Tests for API Request Log and Stats endpoints."""
-from datetime import datetime, timezone, timedelta
 from unittest.mock import AsyncMock
 
 from src.tests.conftest import make_classic_user, make_session
@@ -18,8 +17,10 @@ def redis_mock(user_id, rt, rtm, ls, lc):
         f"ls:{user_id}": str(ls).encode('ascii'),
         f"lc:{user_id}": str(lc).encode('ascii'),
     }
+
     async def async_get(key, *args, **kwargs):
         return mock_database.get(key, None)
+
     mock_redis.get.side_effect = async_get
     return mock_redis
 
@@ -90,7 +91,6 @@ async def test_get_request_stats_empty_db_returns_none_metrics(client, db_sessio
     assert resp.status_code == 200
     data = resp.json()
     assert data["avg_latency_ms"] is None
-
 
 
 async def test_get_request_stats_unauthenticated_returns_401(client):
