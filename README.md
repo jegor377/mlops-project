@@ -147,7 +147,7 @@ cd ..
 task frontend:run-dev
 ```
 
-For the full Kubernetes stack locally, a `kind` cluster with Traefik and ArgoCD is used. See `k8s/README.md` for setup instructions.
+For the full Kubernetes stack locally, a `kind` cluster with Traefik and ArgoCD is used. See [`k8s/README.md`](k8s/README.md) for setup instructions.
 
 ---
 
