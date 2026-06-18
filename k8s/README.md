@@ -29,7 +29,13 @@ Or manually ensure you have:
 
 The local stack runs on a `kind` cluster with Traefik as the Gateway API controller. ArgoCD runs only for production and staging. Locally the rollout resources are transformed into deployments. PostgreSQL is managed via CNPG, Redis via Bitnami Helm chart.
 
-### 1. Spin up the cluster and infrastructure
+### 1. Open Devbox shell
+
+```bash
+devbox shell
+```
+
+### 2. Spin up the cluster and infrastructure
 
 ```bash
 task terraform:dev:apply
@@ -37,13 +43,13 @@ task terraform:dev:apply
 
 This provisions the kind cluster and installs core infrastructure components (Traefik, CNPG operator, Redis).
 
-### 2. Apply Kubernetes resources
+### 3. Apply Kubernetes resources
 
 ```bash
 task k8s:apply-dev-resources
 ```
 
-### 3. Create required secrets
+### 4. Create required secrets
 
 The backend requires several secrets. Create them manually if you're not using a cloud secret store:
 
@@ -71,7 +77,7 @@ kubectl get secret bitnami-redis -n redis-system -o yaml \
 
 > **Note:** The session secret key can be any random string — it's used by Starlette's `SessionMiddleware` to sign session cookies.
 
-### 4. Port-forward all services
+### 5. Port-forward all services
 
 ```bash
 task k8s:port-forward
