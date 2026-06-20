@@ -4,6 +4,8 @@
 
 ---
 
+![Volta home page](home_page.png)
+
 ## Overview
 
 Volta is a full-stack ML inference platform built to reflect real-world MLOps and Platform Engineering practices. It exposes a HuggingFace sentiment analysis model through a secure, multi-tenant REST API, backed by a modern async Python backend, a React/TypeScript dashboard, and a Kubernetes-native deployment pipeline driven by ArgoCD and Argo Rollouts.
