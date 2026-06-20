@@ -4,7 +4,7 @@
 
 ---
 
-![Volta home page](home_page.png)
+![Home Page](home_page.png)
 
 ## Overview
 
@@ -13,6 +13,8 @@ Volta is a full-stack ML inference platform built to reflect real-world MLOps an
 The project covers the nearly complete lifecycle of a production ML service: authentication and authorization, API gateway mechanics (rate limiting, audit logging), infrastructure-as-code, CI/CD with GitOps, progressive delivery, and integration testing — all on Google Kubernetes Engine.
 
 ---
+
+![Dashboard Page](dashboard.png)
 
 ## Architecture
 
