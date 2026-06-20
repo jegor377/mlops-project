@@ -1,5 +1,61 @@
 # Changelog
 
+## [0.10.0](https://github.com/jegor377/mlops-project/compare/ml_server@0.9.3...ml_server@0.10.0) (2026-06-20)
+
+
+### Features
+
+* **audit-log:** adds audit log endpoint ([ba8085d](https://github.com/jegor377/mlops-project/commit/ba8085de643bddc25f615349818921bfd38675bb))
+* **auth:** add is_active to me route ([a88d6cb](https://github.com/jegor377/mlops-project/commit/a88d6cbba72d0a767c98093d618dba895be47f26))
+* **auth:** adds github oauth login backend routes ([3870a22](https://github.com/jegor377/mlops-project/commit/3870a229db6138af3efbafa2ac2c057646d33e0d))
+* **auth:** adds logout endpoint ([96e2d7d](https://github.com/jegor377/mlops-project/commit/96e2d7df91b534f4844e03287d9f49d72f72bd0a))
+* **auth:** adds oauth2 authorization code flow login via google ([de1acfd](https://github.com/jegor377/mlops-project/commit/de1acfd433685d70694c31fd9c324d8473cf14d0))
+* **auth:** adds resend_verification route ([5cd19c5](https://github.com/jegor377/mlops-project/commit/5cd19c516e830d52a321555056daf6b196585ddb))
+* **auth:** prevent deactivated users from signing in via Google ([0c697a0](https://github.com/jegor377/mlops-project/commit/0c697a0e4e595c5159e665e05d0adf9ecdf1fa9b))
+* **general:** adds rate limitting the predict request and capturing the latest requests and its metrics ([7003e5e](https://github.com/jegor377/mlops-project/commit/7003e5eef0a0b1d3a042ab793eec17bad753d58e))
+* **ml_server:** add user registration endpoint ([6e2fb9b](https://github.com/jegor377/mlops-project/commit/6e2fb9bdcc685d34f797186af07faf7a748d6d77))
+* **ml_server:** adds classic login route to auth along with session management ([c4027a3](https://github.com/jegor377/mlops-project/commit/c4027a36d04a8711e856908483c1fb9a6e74e204))
+* **ml_server:** adds email verification system to register endpoint ([090822f](https://github.com/jegor377/mlops-project/commit/090822f5f4896433430b3e6f6ce052c6f3f63d21))
+* **ml_server:** adds endpoints, db models, db migration and schemas for forgot-password and reset-password ([3a83d8c](https://github.com/jegor377/mlops-project/commit/3a83d8c8587f146ba8a3aea801d306ae26656315))
+* **pat:** adds pat endpoints to ml_server ([f328a80](https://github.com/jegor377/mlops-project/commit/f328a8043c42634ca5198ba3e425b6916e80e378))
+* **pat:** adds revoked_at info and fixes PATStatus bug in list_pats ([8ad70db](https://github.com/jegor377/mlops-project/commit/8ad70db7fb11675d54fca5f828b07e73ec1fc502))
+* **pat:** adds scopes and pat authorization dependency ([e16a287](https://github.com/jegor377/mlops-project/commit/e16a2874d7aebd969a9c72f90a1240d593bc2ac5))
+* **pat:** adds sending email notifications on every pat creation and revoke ([1becc7f](https://github.com/jegor377/mlops-project/commit/1becc7fe1d105a6fde84b7d9d87402fea8de03c6))
+* **requests:** adds requests stats endpoints ([b43adba](https://github.com/jegor377/mlops-project/commit/b43adba7c5fd711489e320a3aa9e3323032d7263))
+
+
+### Bug Fixes
+
+* **auth:** fixes not working login_with_google endpoint and callback ([f662bb5](https://github.com/jegor377/mlops-project/commit/f662bb5c067deb29b645b2c4df2b3eac89be1fb5))
+* **email_service:** changes order of info in send_pat_creation_email and fixes bug ([c9d1fe6](https://github.com/jegor377/mlops-project/commit/c9d1fe63cf4cbf1a1a2fe63dc5822cebe9f724ff))
+* fix incomplete profile from google naked message instead of redirect with info ([2f4b9b8](https://github.com/jegor377/mlops-project/commit/2f4b9b8440bc8cc1b698546246036c313f280e61))
+* fix return bug and lint issue "Function is too complex (C901)" ([ce7f772](https://github.com/jegor377/mlops-project/commit/ce7f772652bf325eb47c2aa096700c49674b1a39))
+* **ml_server:** fix missing import ([47d16bf](https://github.com/jegor377/mlops-project/commit/47d16bff7bb35a15be7644ecb08c04423f4b029b))
+* **pat:** prevent inactive users from creating PATs ([61c8386](https://github.com/jegor377/mlops-project/commit/61c8386ca56dfc97860b7a7009a31772527ae5b6))
+* **pat:** remove typo that made response to be a list ([72c215b](https://github.com/jegor377/mlops-project/commit/72c215b14cbce1904979acc3fcffcf1388dba8d4))
+
+
+### Chores
+
+* adds authlib for google oauth2 auth code flow and pydantic-settings for better settings impl ([748e6d0](https://github.com/jegor377/mlops-project/commit/748e6d017e8c24309895a15e1adfd2d7c375e2c2))
+* adds oauth state session secret key used for logging via oauth in google and frontend hostname for local testing ([ef51c02](https://github.com/jegor377/mlops-project/commit/ef51c022379f203794a71d45dc3344cec3d00068))
+* adds redis example conf ([6077c6c](https://github.com/jegor377/mlops-project/commit/6077c6ce0562d6caf620aee5727bead2f9219829))
+* adds redis package ([cf7c2f6](https://github.com/jegor377/mlops-project/commit/cf7c2f64caa944e07a43178d16609beab2d19014))
+* fill missing .env.example file fields ([4be563b](https://github.com/jegor377/mlops-project/commit/4be563be5bf17ef6a9815baf2afc9097a8298521))
+* **migration:** adds new UserAuthMethod model migration ([a213d9d](https://github.com/jegor377/mlops-project/commit/a213d9db0541bc68349563df52b6df5bc6c30f66))
+* **ml_server:** add alembic with async migrations setup ([e570887](https://github.com/jegor377/mlops-project/commit/e57088736632a6790202ab93d32268c784b96ac6))
+* **ml_server:** add initial users table migration ([2543aec](https://github.com/jegor377/mlops-project/commit/2543aecf11dd7bdb05c0b2a26bb9be35f3da46c2))
+* **ml_server:** adds ability to test a single test file ([0cef7da](https://github.com/jegor377/mlops-project/commit/0cef7da21b37a0f9d75d694f07ebdc65c33b8e8a))
+* **ml_server:** adds fastapi-mail package for verification email sending ([b966cd6](https://github.com/jegor377/mlops-project/commit/b966cd6e4aa6bf759c987a15ee428fe20a56b093))
+* **ml_server:** adds fastapi-mail package for verification email sending ([486ddf1](https://github.com/jegor377/mlops-project/commit/486ddf1b58c76d18dd6a972805a51677409510c7))
+* **ml_server:** email verification system db migration ([7ba2899](https://github.com/jegor377/mlops-project/commit/7ba2899af653ccd0593362785873341802640f0e))
+* **ml_server:** make new-migration task wait for keyboard input to set migration message ([cbe2dd2](https://github.com/jegor377/mlops-project/commit/cbe2dd229de556eb2b26d02aaf15cf220583ad70))
+* **ml_server:** remove test comment ([3125663](https://github.com/jegor377/mlops-project/commit/3125663a351d942b9bf5174ac9fb0194ec2deae6))
+* **ml_server:** update taskfile to work with new email verification system for registration endpoint ([9aeb106](https://github.com/jegor377/mlops-project/commit/9aeb10626b8721ed59ebda72d98e1438dc60cdcb))
+* **pat:** adds db migration ([bd8343e](https://github.com/jegor377/mlops-project/commit/bd8343ef4c8eebbb9d5fa7225b7d6ff66d6d8857))
+* updates env example to account for correct secrets location ([6d80dfd](https://github.com/jegor377/mlops-project/commit/6d80dfd5aafa24d5ecb0660d0c7f9c953ded84d9))
+* updates env example to account for correct secrets location ([e4e8438](https://github.com/jegor377/mlops-project/commit/e4e84384099a3ef938e89e9c6e9c6d7914bdfaf0))
+
 ## [0.9.3](https://github.com/jegor377/mlops-project/compare/ml_server@0.9.2...ml_server@0.9.3) (2026-04-03)
 
 
