@@ -599,7 +599,7 @@
     },
     "nodejs@latest": {
       "last_modified": "2026-03-21T07:29:51Z",
-      "plugin_version": "0.0.3",
+      "plugin_version": "0.0.4",
       "resolved": "github:NixOS/nixpkgs/09061f748ee21f68a089cd5d91ec1859cd93d0be#nodejs_25",
       "source": "devbox-search",
       "version": "25.8.1",
@@ -837,7 +837,7 @@
     },
     "python@3.12.3": {
       "last_modified": "2024-06-12T20:55:33Z",
-      "plugin_version": "0.0.4",
+      "plugin_version": "0.0.5",
       "resolved": "github:NixOS/nixpkgs/a9858885e197f984d92d7fe64e9fff6b2e488d40#python312",
       "source": "devbox-search",
       "version": "3.12.3",

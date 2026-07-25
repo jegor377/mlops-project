@@ -12,7 +12,7 @@ tasks:
       ENV: development
       HOSTNAME: localhost
       FRONTEND_HOSTNAME: localhost
-      DB_URI: "postgresql://postgres:postgres@127.0.0.1:8081/test_db"
+      DB_URI: "postgresql://postgres:postgres@127.0.0.1:5432/test_db"
       REDIS_URI: "redis://127.0.0.1:6379/0"
       LOAD_MODEL: true
       OAUTH_STATE_SESSION_SECRET_KEY: dummy-secret-key
@@ -63,7 +63,7 @@ tasks:
     desc: "Run a postgres container locally"
     cmds:
       - |
-        docker run -d -p {{.DB_PORT}}:5432 \
+        docker run -d -p 5432:5432 \
         --name postgres \
         -e POSTGRES_USER=postgres \
         -e POSTGRES_PASSWORD=postgres \
@@ -127,4 +127,5 @@ tasks:
         -p 6379:6379 \
         -p 8001:8001 \
         --network=mlops-network \
-        redis/redis-stack
+        redis/redis-stack \
+        redis-server --requirepass "redis_pass"

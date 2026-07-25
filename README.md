@@ -124,13 +124,16 @@ Integration tests run against real infrastructure — no mocking of the database
 git clone https://github.com/jegor377/mlops-project
 cd mlops-project
 
+cp .env.example .env
+
 task sync-deps
 
 # Backend
-cp .env.example .env
-# Edit .env: DATABASE_URL, REDIS_URL, SECRET_KEY, OAuth credentials
-# Also, make sure that you have created secret files in /run/secrets
+cp ml_server/.env.example ml_server/.env
+# Edit .env: SMTP__HOST
+# Also, make sure that you have created secret files in /run/secrets (REDIS_PASSWORD, SECRET_KEY, OAuth credentials)
 # if you don't use any cloud secret storage 
+# Secret OAUTH_STATE_SESSION_SECRET_KEY can be generated artificially, e.g., you can generate md5sum of the string of your choosing 
 
 # Run necessary services in Docker
 task ml_server:create-docker-network
@@ -141,7 +144,7 @@ task ml_server:run-redis
 # Run migrations
 task ml_server:upgrade-db
 
-# Start backend
+# Start backend (make sure that you've created the secrets in /run/secrets before running this)
 task ml_server:run-dev
 
 # Frontend

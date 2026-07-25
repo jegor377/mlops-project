@@ -81,7 +81,7 @@ jobs:
       run: task lint
     - name: Test with pytest
       env:
-        DB_URI: postgresql://postgres:postgres@localhost:8082/test_db
+        DB_URI: postgresql://postgres:postgres@127.0.0.1:5432/test_db
         LOAD_MODEL: false # don't load the model during tests to speed them up. Only local tests will load the model.
         FAIL_FAST: true # fail fast in CI to get faster feedback. Local tests will not fail fast to get more feedback.
       run:  task ml_server:test
