@@ -19,7 +19,7 @@ from src.ml_server.models.email_verification import EmailVerification
 from src.ml_server.models.password_reset import PasswordReset
 from src.ml_server.models.audit_log import EventCategory
 
-from src.ml_server.schemas.user import UserCreate, UserLogin, ForgotPassword, ResetPassword
+from src.ml_server.schemas.user import UserCreate, UserLogin, ForgotPassword, ResetPassword, Me
 
 from src.ml_server.dependencies.settings import get_settings
 from src.ml_server.dependencies.db import get_session
@@ -412,15 +412,11 @@ async def reset_password(
     return Response(status_code=200)
 
 
-@router.get("/auth/me", status_code=200)
+@router.get("/auth/me", status_code=200, response_model=Me)
 async def me(
     user: Annotated[User, Depends(get_current_user)],
-):
-    return {
-        "email": user.email,
-        "id": user.id,
-        "is_active": user.is_active
-    }
+) -> Me:
+    return user
 
 
 @router.post("/auth/logout", status_code=200)

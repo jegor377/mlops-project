@@ -35,8 +35,10 @@ target_metadata = Base.metadata
 import os
 
 
-def get_url():
-    res = os.environ.get("DB_URI") or config.get_main_option("sqlalchemy.url")
+def get_url() -> str:
+    res: str | None = os.environ.get("DB_URI") or config.get_main_option("sqlalchemy.url")
+    if res is None:
+        raise ValueError("Database url cannot be None!")
     return res.replace("postgresql://", "postgresql+asyncpg://", 1)
 
 
