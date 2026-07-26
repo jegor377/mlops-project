@@ -4,4 +4,4 @@ metadata:
   name: frontend-route
 spec:
   hostnames:
-  - ml-server-dev.com
+  - www.ml-server-dev.com

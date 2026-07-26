@@ -40,12 +40,12 @@
   path: /spec/template/spec/containers/0/env/-
   value:
     name: HOSTNAME
-    value: http://ml-server-dev.com
+    value: http://www.ml-server-dev.com
 - op: add
   path: /spec/template/spec/containers/0/env/-
   value:
     name: FRONTEND_HOSTNAME
-    value: http://ml-server-dev.com
+    value: http://www.ml-server-dev.com
 - op: add
   path: /spec/template/spec/containers/0/env/-
   value:

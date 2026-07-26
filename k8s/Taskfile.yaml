@@ -10,12 +10,12 @@ tasks:
     desc: "Port forward the postgres service to localhost"
     watch: true
     cmds:
-      - kubectl -n ml-server-dev port-forward svc/cnpg-cluster-rw 8082:5432
+      - kubectl -n ml-server-dev port-forward svc/cnpg-cluster-rw 5432
   port-forward-mailpit:
     desc: "Port forward the Mailpit service to localhost"
     watch: true
     cmds:
-      - kubectl -n ml-server-dev port-forward svc/mailpit 8026:8025
+      - kubectl -n ml-server-dev port-forward svc/mailpit 8025
   port-forward-redis:
     desc: "Port forward the Redis service to localhost"
     watch: true
@@ -98,8 +98,10 @@ tasks:
       - kind-load-frontend-image
   psql-k8s-dev:
     desc: "Connect to the Postgres instance running in the dev Kubernetes environment"
+    vars:
+      NAMESPACE: ml-server-dev
     cmds:
       - |
-        PSQL_URI=$(kubectl get secret cnpg-cluster-app -o yaml | yq ".data.uri" | base64 -d)
-        PSQL_URI=$(sed 's/cnpg-cluster-rw.ml-server-dev:5432/127.0.0.1:8082/' <<< "$PSQL_URI")
+        PSQL_URI=$(kubectl get secret cnpg-cluster-app -n {{.NAMESPACE}} -o yaml | yq ".data.uri" | base64 -d)
+        PSQL_URI=$(sed 's/cnpg-cluster-rw.ml-server-dev:5432/127.0.0.1:5432/' <<< "$PSQL_URI")
         psql "$PSQL_URI"

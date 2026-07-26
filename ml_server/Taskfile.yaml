@@ -12,8 +12,8 @@ tasks:
       ENV: development
       HOSTNAME: localhost
       FRONTEND_HOSTNAME: localhost
-      DB_URI: "postgresql://postgres:postgres@127.0.0.1:5432/test_db"
-      REDIS_URI: "redis://127.0.0.1:6379/0"
+      DB_URI: "{{.DEV_POSTGRES_URI}}/test_db"
+      REDIS_URI: "{{.DEV_REDIS_URI}}/0"
       LOAD_MODEL: true
       OAUTH_STATE_SESSION_SECRET_KEY: dummy-secret-key
       SMTP__FROM_EMAIL_ADDRESS: no-reply@example.com
@@ -43,7 +43,7 @@ tasks:
       - |
         docker run -d -p 8000:8000 \
         --name ml_server \
-        -e DB_URI=postgresql://postgres:postgres@postgres:5432/dev_db \
+        -e DB_URI={{.DEV_POSTGRES_URI}}/dev_db \
         -e LOAD_MODEL={{.LOAD_MODEL_IN_DEV}} \
         -e HOSTNAME={{.HOSTNAME}} \
         -e SMTP_HOST={{.SMTP_HOST}} \
@@ -63,7 +63,7 @@ tasks:
     desc: "Run a postgres container locally"
     cmds:
       - |
-        docker run -d -p 5432:5432 \
+        docker run -d -p 5433:5432 \
         --name postgres \
         -e POSTGRES_USER=postgres \
         -e POSTGRES_PASSWORD=postgres \
@@ -84,19 +84,27 @@ tasks:
       - docker network rm mlops-network
   psql:
     desc: "Connect to the postgres container using psql"
+    env:
+      DB_URI: "{{.DEV_POSTGRES_URI}}/dev_db"
     cmds:
       - psql "$DB_URI"
   alembic:
     desc: "Run alembic commands"
+    env:
+      DB_URI: "{{.DEV_POSTGRES_URI}}/dev_db"
     cmds:
       - uv run alembic {{.CLI_ARGS}}
   upgrade-db:
     desc: "Upgrade the database to the latest version"
+    env:
+      DB_URI: "{{.DEV_POSTGRES_URI}}/dev_db"
     cmds:
       - uv run alembic upgrade head
   new-migration:
     desc: "Create a new alembic migration"
     silent: true
+    env:
+      DB_URI: "{{.DEV_POSTGRES_URI}}/dev_db"
     cmds:
       - |
         echo -n "Enter migration message: "
@@ -113,7 +121,7 @@ tasks:
         docker run -d \
         --name=mailpit \
         --restart unless-stopped \
-        -p 8025:8025 \
+        -p 8026:8025 \
         -p 1025:1025 \
         --network=mlops-network \
         axllent/mailpit
@@ -124,7 +132,7 @@ tasks:
         docker run -d \
         --name=redis \
         --restart unless-stopped \
-        -p 6379:6379 \
+        -p 6380:6379 \
         -p 8001:8001 \
         --network=mlops-network \
         redis/redis-stack \

@@ -156,6 +156,14 @@ task frontend:run-dev
 
 For the full Kubernetes stack locally, a `kind` cluster with Traefik and ArgoCD is used. See [`k8s/README.md`](k8s/README.md) for setup instructions.
 
+### Port-forwarding
+
+To run port-forwarding in development mode you can use this command (sudo is necessary to safely port-forward traefik to port 80):
+
+```bash
+sudo env "PATH=$PATH" "KUBECONFIG=$HOME/.kube/config" task k8s:port-forward
+```
+
 ---
 
 ## Project Structure
