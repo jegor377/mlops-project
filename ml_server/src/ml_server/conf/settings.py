@@ -7,13 +7,14 @@ from pydantic_settings import (
 from pydantic import (
     BaseModel,
     PostgresDsn,
+    SecretStr,
 )
 from typing import Literal
 
 
 class SMTPCredentials(BaseModel):
     username: str
-    password: str
+    password: SecretStr
 
 
 class SMTPSettings(BaseModel):

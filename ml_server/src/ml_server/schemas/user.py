@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, field_validator, Field
+from pydantic import BaseModel, EmailStr, NameEmail, field_validator, Field
 
 
 class UserBase(BaseModel):
@@ -36,3 +36,7 @@ class Me(BaseModel):
     email: str
     id: int
     is_active: bool
+
+
+class Recipient(BaseModel):
+    email: NameEmail

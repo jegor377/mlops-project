@@ -1,5 +1,5 @@
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
-from pydantic import EmailStr
+from pydantic import EmailStr, NameEmail, SecretStr
 from datetime import datetime
 
 from src.ml_server.conf.settings import Settings
@@ -11,7 +11,7 @@ def _make_mailer(settings: Settings) -> FastMail:
         password = settings.smtp.credentials.password
     else:
         username = ''
-        password = ''
+        password = SecretStr('')  # Empty password if no credentials are provided
 
     mail_config = ConnectionConfig(
         MAIL_USERNAME=username,
@@ -32,7 +32,7 @@ async def send_verification_email(
 ) -> None:
     message = MessageSchema(
         subject="Verify your email address",
-        recipients=[recipient],
+        recipients=[NameEmail(email=str(recipient), name=str(recipient))],
         body=(
             f"<p>Thanks for registering. Click the link below to activate your account:</p>"
             f'<p><a href="{verify_url}">{verify_url}</a></p>'
@@ -48,7 +48,7 @@ async def send_password_reset_email(
 ) -> None:
     message = MessageSchema(
         subject="Reset your password",
-        recipients=[recipient],
+        recipients=[NameEmail(email=str(recipient), name=str(recipient))],
         body=(
             f"<p>We received a request to reset your Volta password.</p>"
             f'<p><a href="{reset_url}">Reset password</a></p>'
@@ -65,12 +65,12 @@ async def send_pat_creation_email(
     pat_name: str,
     scopes: list[str],
     expires_in_days: int | None,
-    expires_at: datetime,
+    expires_at: datetime | None,
     settings: Settings
 ) -> None:
     message = MessageSchema(
         subject="Your new Personal Access Token",
-        recipients=[recipient],
+        recipients=[NameEmail(email=str(recipient), name=str(recipient))],
         body=(
             f"<p>A new Personal Access Token (PAT) has been created for your account.</p>"
             f"<p><strong>Name:</strong> {pat_name}</p>"
@@ -89,7 +89,7 @@ async def send_pat_revocation_email(
 ) -> None:
     message = MessageSchema(
         subject="Personal Access Token Revoked",
-        recipients=[recipient],
+        recipients=[NameEmail(email=str(recipient), name=str(recipient))],
         body=(
             f"<p>Your Personal Access Token (PAT) named '{pat_name}' has been revoked.</p>"
             f"<p>If you didn't revoke this token, please check your account security settings immediately.</p>"
