@@ -2,6 +2,7 @@ import secrets
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
+from pydantic import NameEmail
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, Query
 from sqlalchemy import select, func, and_, or_
@@ -45,19 +46,24 @@ async def create_pat(
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Inactive users cannot create tokens")
 
-    now = datetime.now(timezone.utc)
-    count_condition = and_(
-        PersonalAccessToken.user_id == user.id,
-        PersonalAccessToken.is_active == True,  # noqa: E712
-        or_(
-            PersonalAccessToken.expires_at == None,  # noqa: E711
-            PersonalAccessToken.expires_at > now
-        )
+    user_result = await session.execute(
+        select(User)
+        .where(User.id == user.id)
+        .with_for_update()
     )
+    locked_user = user_result.scalar_one()
+    now = datetime.now(timezone.utc)
     pat_count_result = await session.execute(
         select(func.count())
         .select_from(PersonalAccessToken)
-        .where(count_condition)
+        .where(
+            PersonalAccessToken.user_id == locked_user.id,
+            PersonalAccessToken.is_active,
+            or_(
+                PersonalAccessToken.expires_at.is_(None),
+                PersonalAccessToken.expires_at > now
+            )
+        )
     )
     pat_count = pat_count_result.scalar_one()
     if pat_count >= settings.pat_count_limit:
@@ -84,13 +90,12 @@ async def create_pat(
     token_hash = hash_token(raw_token)
     token_prefix = raw_token[:8]  # "vlt_XXXX"
 
-    now = datetime.now(timezone.utc)
     expires_at = None
     if body.expires_in_days is not None:
         expires_at = now + timedelta(days=body.expires_in_days)
 
     pat = PersonalAccessToken(
-        user_id=user.id,
+        user_id=locked_user.id,
         name=body.name,
         token_hash=token_hash,
         token_prefix=token_prefix,
@@ -105,7 +110,7 @@ async def create_pat(
 
     await log_event(
         db=session,
-        user_id=user.id,
+        user_id=locked_user.id,
         event=EventCategory.pat_created,
         request=request,
     )
@@ -115,7 +120,10 @@ async def create_pat(
         await session.refresh(pat)
     except Exception as e:
         await session.rollback()
-        logger.error(f"Failed to create PAT for user {user.id}: {e}")
+        logger.exception(
+            "Failed to create PAT for user %d",
+            user.id,
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
 
     await send_pat_creation_email(
@@ -157,14 +165,12 @@ async def list_pats(
     now = datetime.now(timezone.utc)
     conditions = []
 
-    if status == PATStatus.ALL:
-        conditions.append(True)
-    elif status == PATStatus.ACTIVE:
+    if status == PATStatus.ACTIVE:
         conditions.append(
             and_(
                 PersonalAccessToken.is_active,
                 or_(
-                    PersonalAccessToken.expires_at == None,  # noqa: E711
+                    PersonalAccessToken.expires_at.is_(None),
                     PersonalAccessToken.expires_at > now
                 )
             )
@@ -172,9 +178,9 @@ async def list_pats(
     elif status == PATStatus.INACTIVE:
         conditions.append(
             or_(
-                PersonalAccessToken.is_active == False,  # noqa: E712
+                ~PersonalAccessToken.is_active,
                 and_(
-                    PersonalAccessToken.expires_at != None,  # noqa: E711
+                    PersonalAccessToken.expires_at.is_not(None),
                     PersonalAccessToken.expires_at <= now
                 )
             )
@@ -218,7 +224,7 @@ async def get_pat_stats(
         PersonalAccessToken.user_id == user.id,
         PersonalAccessToken.is_active,
         or_(
-            PersonalAccessToken.expires_at is None,
+            PersonalAccessToken.expires_at.is_(None),
             PersonalAccessToken.expires_at > now
         )
     ))
@@ -239,7 +245,7 @@ async def revoke_pat(
     session: Annotated[AsyncSession, Depends(get_session)],
     user: Annotated[User, Depends(get_current_user)],
     settings: Annotated[Settings, Depends(get_settings)],
-) -> None:
+) -> Response:
     """Revoke (soft-delete) a PAT. Only owner can revoke."""
 
     if not user.is_active:
@@ -273,7 +279,10 @@ async def revoke_pat(
         await session.commit()
     except Exception as e:
         await session.rollback()
-        logger.error(f"Failed to revoke PAT {token_id}: {e}")
+        logger.exception(
+            "Failed to revoke PAT %d",
+            token_id,
+        )
         raise HTTPException(status_code=500, detail="Internal server error")
 
     await send_pat_revocation_email(user.email, pat.name, settings)
