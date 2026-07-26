@@ -2,6 +2,7 @@ from pydantic_settings import (
     BaseSettings,
     SettingsConfigDict,
     NestedSecretsSettingsSource,
+    PydanticBaseSettingsSource,
 )
 from pydantic import (
     BaseModel,
@@ -47,8 +48,8 @@ class Settings(BaseSettings):
     frontend_hostname: str
     oauth_state_session_secret_key: str
     db_uri: PostgresDsn
-    redis_host: str = '127.0.0.1'
-    redis_port: int = 6379
+    app_redis_host: str = '127.0.0.1'
+    app_redis_port: int = 6379
     redis_password: str = ''
     load_model: bool
     pool_size: int = 5
@@ -65,7 +66,6 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file='.env',
         secrets_dir='/run/secrets',
-        secrets_nested_delimiter='__',
         env_nested_delimiter='__',
         case_sensitive=False,
     )
@@ -73,11 +73,11 @@ class Settings(BaseSettings):
     @classmethod
     def settings_customise_sources(
         cls,
-        settings_cls,
-        init_settings,
-        env_settings,
-        dotenv_settings,
-        file_secret_settings,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
     ):
         return (
             init_settings,
@@ -100,4 +100,4 @@ class Settings(BaseSettings):
 
     @property
     def redis_uri(self) -> str:
-        return f"redis://:{self.redis_password}@{self.redis_host}:{self.redis_port}/0"
+        return f"redis://:{self.redis_password}@{self.app_redis_host}:{self.app_redis_port}/0"

@@ -49,7 +49,7 @@ spec:
                 key: uri
           - name: LOAD_MODEL
             value: "true"
-          - name: REDIS_HOST
+          - name: APP_REDIS_HOST
             value: bitnami-redis-master.redis-system.svc.cluster.local
           readinessProbe:
             httpGet:

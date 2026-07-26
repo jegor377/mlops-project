@@ -137,7 +137,7 @@ cp ml_server/.env.example ml_server/.env
 
 # Run necessary services in Docker
 task ml_server:create-docker-network
-task ml_server:run-postgres-container
+task ml_server:run-postgres
 task ml_server:run-mailpit
 task ml_server:run-redis
 

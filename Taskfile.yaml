@@ -3,7 +3,9 @@
 version: '3'
 
 
-dotenv: ['.env', 'ml_server/.env']
+dotenv:
+  - .env
+  - ml_server/.env
 
 
 vars:

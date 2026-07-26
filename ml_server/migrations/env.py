@@ -37,6 +37,7 @@ import os
 
 def get_url() -> str:
     res: str | None = os.environ.get("DB_URI") or config.get_main_option("sqlalchemy.url")
+    print(f"RES: {res}")
     if res is None:
         raise ValueError("Database url cannot be None!")
     return res.replace("postgresql://", "postgresql+asyncpg://", 1)
