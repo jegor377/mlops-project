@@ -1,4 +1,4 @@
 {
-  "ml_server": "0.9.3",
-  "frontend": "0.2.2"
+  "ml_server": "0.10.0",
+  "frontend": "0.3.0"
 }
