@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.ml_server.models.user_auth_method import UserAuthMethod
     from src.ml_server.models.audit_log import AuditLog
+    from src.ml_server.models.subscription import Subscription
 
 
 class User(Base):
@@ -26,6 +27,9 @@ class User(Base):
     audit_logs: Mapped[list["AuditLog"]] = relationship(
         back_populates="user",
         cascade="all, delete-orphan",
+    )
+    subscriptions: Mapped[list["Subscription"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
     )
 
     is_active: Mapped[bool] = mapped_column(
