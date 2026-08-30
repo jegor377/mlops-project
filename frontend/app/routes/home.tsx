@@ -99,10 +99,10 @@ const PLANS = [
     name: "Pro",
     price: "$29",
     per: "per month",
-    features: ["50,000 requests / day", "10 API keys", "All Pro models", "90-day history", "Priority support", "Webhook notifications", "Higher rate limits"],
-    cta: "Start free trial",
+    features: ["50,000 requests / day", "10 API keys", "All Pro models", "90-day request history", "Priority support", "Webhook notifications", "Higher rate limits"],
+    cta: "Start Pro",
     highlight: true,
-    link: "/register",
+    link: "/register?plan=pro",
   },
   {
     name: "Enterprise",
@@ -111,7 +111,7 @@ const PLANS = [
     features: ["Unlimited requests", "Unlimited API keys", "All available models", "Custom SLA", "Dedicated support", "On-prem option", "Custom contracts"],
     cta: "Contact sales",
     highlight: false,
-    link: "/register",
+    link: "/contact-sales",
   },
 ];
 
