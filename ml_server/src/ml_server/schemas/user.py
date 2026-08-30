@@ -1,5 +1,7 @@
 from pydantic import BaseModel, EmailStr, NameEmail, field_validator, Field
 
+from src.ml_server.enums.plan_tier import PlanTier
+
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -7,6 +9,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    subscription_plan: PlanTier = Field(alias="subscriptionPlan")
 
     @field_validator("password")
     @classmethod

@@ -47,3 +47,7 @@ class User(Base):
     deactivated_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+
+    pending_checkout: Mapped[bool] = mapped_column(
+        Boolean, server_default=text("false"), nullable=False
+    )

@@ -20,6 +20,7 @@ from src.ml_server.models.password_reset import PasswordReset
 from src.ml_server.models.audit_log import EventCategory
 
 from src.ml_server.schemas.user import UserCreate, UserLogin, ForgotPassword, ResetPassword, Me
+from src.ml_server.enums.plan_tier import PlanTier
 
 from src.ml_server.dependencies.settings import get_settings
 from src.ml_server.dependencies.db import get_session
@@ -52,9 +53,11 @@ async def register(
 ):
     normalized_email = request.email.lower().strip()
     password_hash = bcrypt.hashpw(request.password.encode("utf-8"), bcrypt.gensalt())
+    pending_checkout = request.subscription_plan == PlanTier.PRO
     new_user = User(
         email=normalized_email,
         is_active=False,
+        pending_checkout=pending_checkout,
     )
     new_auth_method = UserAuthMethod(
         provider=AuthProvider.CLASSIC,
