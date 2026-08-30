@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import type { ReactNode, SVGProps } from "react";
-import { useAuth } from "../context/auth";
+import { useAuth, type AuthUser } from "../context/auth";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -444,6 +444,63 @@ function RevokeModal({ show, onClose, onConfirm, loading }: RevokeModalProps) {
   );
 }
 
+// -- Pending checkout banner ---------------------------------------------------
+
+function PendingCheckoutBanner() {
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelled, setCancelled] = useState(false);
+
+  const handleCancel = async () => {
+    setCancelling(true);
+    try {
+      await fetch("/checkout/cancel", { method: "POST", credentials: "include" });
+      setCancelled(true);
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  if (cancelled) return null;
+
+  return (
+    <div className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 overflow-hidden">
+      <div className="flex items-start gap-4 p-5">
+        <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
+          <Icon d={icons.billing} size={18} stroke="#d97706" />
+        </div>
+        <div className="flex-1">
+          <p className="text-sm font-semibold text-amber-900 mb-1">Checkout pending</p>
+          <p className="text-xs text-amber-700 leading-relaxed">
+            Your plan upgrade is incomplete. Finish checkout to unlock your plan's full limits.
+          </p>
+        </div>
+      </div>
+      <div className="border-t border-amber-200 px-5 py-3 bg-amber-100/40 flex items-center justify-between">
+        <span className="text-xs text-amber-600 mono">Billing setup is incomplete.</span>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={handleCancel}
+            disabled={cancelling}
+            className="text-xs font-medium text-amber-700 hover:text-amber-900 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {cancelling ? "Cancelling…" : "Cancel checkout"}
+          </button>
+          <a
+            href="/complete-checkout"
+            className="text-xs font-medium text-amber-800 hover:text-amber-950 transition-colors cursor-pointer"
+          >
+            Complete checkout →
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function shouldShowPendingCheckoutBanner(authLoading: boolean, user: AuthUser): boolean {
+  return !authLoading && user?.is_active === true && user?.pending_checkout === true;
+}
+
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 
 interface SidebarProps { active: NavId; setActive: (id: NavId) => void; }
@@ -561,6 +618,9 @@ function TokensPage() {
             </button>
           </div>
         </div>
+      )}
+      { shouldShowPendingCheckoutBanner(authLoading, user) && (
+        PendingCheckoutBanner()
       )}
       <div className="flex items-start justify-between mb-8 gap-4">
         <div>

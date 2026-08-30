@@ -1,6 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
-type AuthUser = { email: string; id: number; is_active: boolean } | null;
+export type AuthUser = {
+  email: string;
+  id: number;
+  is_active: boolean;
+  pending_checkout: boolean;
+} | null;
 type AuthCtx = {
   user: AuthUser;
   loading: boolean;
