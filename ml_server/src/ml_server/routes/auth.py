@@ -478,7 +478,7 @@ async def oauth_callback(
     if provider not in ("google", "github"):
         raise HTTPException(status_code=404)
 
-    subscription_plan = PlanTier[req.session.pop("subscription_plan", PlanTier.FREE.value)]
+    subscription_plan = PlanTier(req.session.pop("subscription_plan", PlanTier.FREE.value))
 
     redirect_uri = settings.frontend_hostname + FrontendURLs.LOGIN
     error = req.query_params.get("error")
