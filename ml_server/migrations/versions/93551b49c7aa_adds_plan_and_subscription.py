@@ -43,7 +43,7 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('plan_id', sa.Integer(), nullable=False),
-    sa.Column('status', sa.Enum('ACTIVE', 'PAST_DUE', 'CANCELED', 'TRIALING', name='subscription_status'), server_default=sa.text("'active'"), nullable=False),
+    sa.Column('status', sa.Enum('ACTIVE', 'PAST_DUE', 'CANCELED', 'TRIALING', name='subscription_status'), server_default=sa.text("'ACTIVE'"), nullable=False),
     sa.Column('custom_price_cents', sa.Integer(), nullable=True),
     sa.Column('custom_terms', sa.String(length=2000), nullable=True),
     sa.Column('current_period_start', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
