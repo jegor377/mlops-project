@@ -1,24 +1,19 @@
 from __future__ import annotations
 
-import enum
 from datetime import datetime
 
 from sqlalchemy import Boolean, Integer, String, DateTime, func, text
-from sqlalchemy import Enum as SAEnum
+from sqlalchemy import Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from typing import TYPE_CHECKING
 
+from src.ml_server.enums.plan_tier import PlanTier
 from src.ml_server.models.base import Base
+
 
 if TYPE_CHECKING:
     from src.ml_server.models.subscription import Subscription
-
-
-class PlanTier(str, enum.Enum):
-    FREE = "free"
-    PRO = "pro"
-    CUSTOM = "custom"
 
 
 class Plan(Base):
@@ -26,7 +21,7 @@ class Plan(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     tier: Mapped[PlanTier] = mapped_column(
-        SAEnum(PlanTier, name="plan_tier", native_enum=True),
+        Enum(PlanTier, name="plan_tier", native_enum=True),
         unique=True,
         nullable=False,
     )
