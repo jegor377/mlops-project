@@ -418,7 +418,7 @@ async def reset_password(
 @router.get("/auth/me", status_code=200, response_model=Me)
 async def me(
     user: Annotated[User, Depends(get_current_user)],
-) -> Me:
+) -> User:
     return user
 
 
