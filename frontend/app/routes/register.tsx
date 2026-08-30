@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
@@ -10,6 +10,7 @@ export default function RegisterPage() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -21,10 +22,11 @@ export default function RegisterPage() {
       return;
     }
     try {
+      const subscriptionPlan = searchParams.get('plan')
       const response = await fetch("/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, confirmPassword }),
+        body: JSON.stringify({ email, password, subscriptionPlan }),
       });
       if (response.ok) {
         navigate("/login?registered=true");
