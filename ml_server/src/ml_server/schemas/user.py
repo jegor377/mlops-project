@@ -39,6 +39,7 @@ class Me(BaseModel):
     email: str
     id: int
     is_active: bool
+    pending_checkout: bool
 
 
 class Recipient(BaseModel):
