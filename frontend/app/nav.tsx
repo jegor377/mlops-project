@@ -47,14 +47,14 @@ export default function Nav() {
         <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm" : "bg-transparent"}`}>
             <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
                 {/* Logo */}
-                <div className="flex items-center gap-2">
+                <a className="flex items-center gap-2" href="/">
                     <div className="w-7 h-7 bg-black rounded-lg flex items-center justify-center">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
                             <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
                         </svg>
                     </div>
                     <span className="font-semibold text-[15px] tracking-tight">Volta</span>
-                </div>
+                </a>
 
                 {/* Desktop Links */}
                 <div className="hidden md:flex items-center gap-8">
