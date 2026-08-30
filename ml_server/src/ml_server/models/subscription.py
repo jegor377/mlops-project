@@ -35,7 +35,7 @@ class Subscription(Base):
 
     status: Mapped[SubscriptionStatus] = mapped_column(
         SAEnum(SubscriptionStatus, name="subscription_status", native_enum=True),
-        server_default=text("'active'"),
+        server_default=text("'ACTIVE'"),
         nullable=False,
     )
 
