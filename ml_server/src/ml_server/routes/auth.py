@@ -37,6 +37,7 @@ import src.ml_server.services.oauth as oauth_services
 from src.ml_server.services.audit_log import log_event
 
 from src.ml_server.utils.frontend_urls import FrontendURLs
+from src.ml_server.utils.billing import has_pending_checkout
 
 
 router = APIRouter()
@@ -53,11 +54,10 @@ async def register(
 ):
     normalized_email = request.email.lower().strip()
     password_hash = bcrypt.hashpw(request.password.encode("utf-8"), bcrypt.gensalt())
-    pending_checkout = request.subscription_plan == PlanTier.PRO
     new_user = User(
         email=normalized_email,
         is_active=False,
-        pending_checkout=pending_checkout,
+        pending_checkout=has_pending_checkout(request.subscription_plan),
     )
     new_auth_method = UserAuthMethod(
         provider=AuthProvider.CLASSIC,
@@ -450,12 +450,15 @@ async def logout(
 async def auth_oauth(
     req: Request,
     provider: str,
-    settings: Annotated[Settings, Depends(get_settings)]
+    settings: Annotated[Settings, Depends(get_settings)],
+    plan: PlanTier = PlanTier.FREE,
 ):
     SUPPORTED_PROVIDERS = frozenset({"google", "github"})
 
     if provider not in SUPPORTED_PROVIDERS:
         raise HTTPException(status_code=404)
+
+    req.session["subscription_plan"] = plan.value
 
     redirect_uri = settings.hostname
     redirect_uri += req.app.url_path_for("oauth_callback", provider=provider)
@@ -474,6 +477,8 @@ async def oauth_callback(
 ):
     if provider not in ("google", "github"):
         raise HTTPException(status_code=404)
+
+    subscription_plan = PlanTier[req.session.pop("subscription_plan", PlanTier.FREE.value)]
 
     redirect_uri = settings.frontend_hostname + FrontendURLs.LOGIN
     error = req.query_params.get("error")
@@ -511,7 +516,13 @@ async def oauth_callback(
 
     try:
         user = await oauth_services.handle_oauth_user_provisioning(
-            session, user, normalized_email, sub, redirect_uri, auth_provider
+            session,
+            user, 
+            normalized_email,
+            sub,
+            subscription_plan,
+            redirect_uri,
+            auth_provider
         )
     except IntegrityError as e:
         logger.error(f"IntegrityError during registration: {e.orig}")

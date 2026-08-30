@@ -9,6 +9,8 @@ from urllib.parse import urlencode
 
 from src.ml_server.models.user import User
 from src.ml_server.models.user_auth_method import UserAuthMethod, AuthProvider
+from src.ml_server.enums.plan_tier import PlanTier
+from src.ml_server.utils.billing import has_pending_checkout
 
 
 logger = logging.getLogger(__name__)
@@ -43,6 +45,7 @@ async def flush(session: AsyncSession, redirect_uri: str) -> RedirectResponse | 
 async def create_active_user(
     normalized_email: str,
     sub: str,
+    subscription_plan: PlanTier,
     redirect_uri: str,
     auth_provider: AuthProvider,
     session: AsyncSession
@@ -51,6 +54,7 @@ async def create_active_user(
         email=normalized_email,
         is_active=True,
         activated_at=datetime.now(timezone.utc),
+        pending_checkout=has_pending_checkout(subscription_plan),
     )
 
     new_auth_method = UserAuthMethod(
@@ -125,6 +129,7 @@ async def handle_oauth_user_provisioning(
     user: User | None,
     normalized_email: str,
     sub: str,
+    subscription_plan: PlanTier,
     redirect_uri: str,
     auth_provider: AuthProvider,
 ) -> User:
@@ -132,11 +137,20 @@ async def handle_oauth_user_provisioning(
     try:
         if not user:
             user = await create_active_user(
-                normalized_email, sub, redirect_uri, auth_provider, session
+                normalized_email,
+                sub,
+                subscription_plan,
+                redirect_uri,
+                auth_provider,
+                session
             )
         else:
             await try_creating_user_auth_method(
-                user, sub, redirect_uri, auth_provider, session
+                user,
+                sub,
+                redirect_uri,
+                auth_provider,
+                session
             )
         await session.flush()
         return user
