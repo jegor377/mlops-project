@@ -20,7 +20,8 @@
     "cloud-provider-kind@latest",
     "nodejs@latest",
     "postgresql@latest",
-    "redis@latest"
+    "redis@latest",
+    "stripe-cli@latest"
   ],
   "shell": {
     "init_hook": [
