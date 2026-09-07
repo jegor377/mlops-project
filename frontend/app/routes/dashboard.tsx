@@ -486,7 +486,7 @@ function PendingCheckoutBanner() {
             {cancelling ? "Cancelling…" : "Cancel checkout"}
           </button>
           <a
-            href="/complete-checkout"
+            href="/checkout/complete"
             className="text-xs font-medium text-amber-800 hover:text-amber-950 transition-colors cursor-pointer"
           >
             Complete checkout →
@@ -679,8 +679,16 @@ function TokensPage() {
 
 // ── Audit Log page ────────────────────────────────────────────────────────────
 
-type AuditCategory = "all" | "pat" | "auth" | "account";
-type AuditEventType = "pat.created" | "pat.revoked" | "auth.login" | "auth.login_failed" | "auth.logout" | "auth.oauth_login" | "account.email_verified" | "account.password_changed" | "account.verification_resent";
+type AuditCategory = "all" | "pat" | "auth" | "account" | "billing";
+type AuditEventType =
+  | "pat.created" | "pat.revoked"
+  | "auth.login" | "auth.login_failed" | "auth.logout" | "auth.oauth_login"
+  | "account.email_verified" | "account.password_changed" | "account.verification_resent"
+  | "billing.checkout_started"
+  | "billing.checkout_canceled"
+  | "billing.subscription_activated"
+  | "billing.subscription_updated"
+  | "billing.subscription_canceled";
 
 interface AuditLogEntry { id: number; event: AuditEventType; ip: string | null; user_agent: string | null; metadata: Record<string, string> | null; created_at: string; }
 interface AuditLogPage { items: AuditLogEntry[]; total: number; page: number; size: number; }
@@ -696,6 +704,11 @@ const EVENT_CONFIG: Record<AuditEventType, EventConfig> = {
   "account.email_verified":      { label: "Email verified",            icon: "user",   iconColor: "#10b981", bgColor: "bg-emerald-50", category: "account" },
   "account.password_changed":    { label: "Password changed",          icon: "shield", iconColor: "#f59e0b", bgColor: "bg-amber-50",   category: "account" },
   "account.verification_resent": { label: "Verification email resent", icon: "user",   iconColor: "#6b7280", bgColor: "bg-gray-100",   category: "account" },
+  "billing.checkout_started":        { label: "Checkout started",         icon: "billing", iconColor: "#3b82f6", bgColor: "bg-blue-50",    category: "billing" },
+  "billing.checkout_canceled":       { label: "Checkout canceled",        icon: "billing", iconColor: "#6b7280", bgColor: "bg-gray-100",   category: "billing" },
+  "billing.subscription_activated":  { label: "Subscription activated",   icon: "billing", iconColor: "#10b981", bgColor: "bg-emerald-50", category: "billing" },
+  "billing.subscription_updated":    { label: "Subscription updated",     icon: "billing", iconColor: "#f59e0b", bgColor: "bg-amber-50",   category: "billing" },
+  "billing.subscription_canceled":   { label: "Subscription canceled",    icon: "billing", iconColor: "#ef4444", bgColor: "bg-red-50",     category: "billing" },
 };
 
 function AuditRow({ entry }: { entry: AuditLogEntry }) {
@@ -726,7 +739,11 @@ function AuditRow({ entry }: { entry: AuditLogEntry }) {
 }
 
 const CATEGORY_FILTERS: { id: AuditCategory; label: string }[] = [
-  { id: "all", label: "All" }, { id: "pat", label: "Tokens" }, { id: "auth", label: "Auth" }, { id: "account", label: "Account" },
+  { id: "all", label: "All" },
+  { id: "pat", label: "Tokens" },
+  { id: "auth", label: "Auth" },
+  { id: "account", label: "Account" },
+  { id: "billing", label: "Billing" },
 ];
 
 function AuditLogPage() {

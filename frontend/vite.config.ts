@@ -32,6 +32,10 @@ export default defineConfig({
               target: BACKEND_URL,
               changeOrigin: true,
             },
+            "/checkout": {
+              target: BACKEND_URL,
+              changeOrigin: true,
+            },
           },
         },
       }
