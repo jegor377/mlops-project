@@ -18,6 +18,7 @@ class AuditCategory(str, enum.Enum):
     pat = "pat"
     auth = "auth"
     account = "account"
+    billing = "billing"
 
 
 class EventCategory(str, enum.Enum):
@@ -30,19 +31,29 @@ class EventCategory(str, enum.Enum):
     account_email_verified = "account.email_verified"
     account_password_changed = "account.password_changed"
     account_verification_resent = "account.verification_resent"
+    billing_checkout_started = "billing.checkout_started"
+    billing_checkout_canceled = "billing.checkout_canceled"
+    billing_subscription_activated = "billing.subscription_activated"
+    billing_subscription_updated = "billing.subscription_updated"
+    billing_subscription_canceled = "billing.subscription_canceled"
 
 
 # Mapping: event string → category
 EVENT_CATEGORY: dict[str, AuditCategory] = {
-    EventCategory.pat_created:                 AuditCategory.pat,
-    EventCategory.pat_revoked:                 AuditCategory.pat,
-    EventCategory.auth_login:                  AuditCategory.auth,
-    EventCategory.auth_login_failed:           AuditCategory.auth,
-    EventCategory.auth_logout:                 AuditCategory.auth,
-    EventCategory.auth_oauth_login:            AuditCategory.auth,
-    EventCategory.account_email_verified:      AuditCategory.account,
-    EventCategory.account_password_changed:    AuditCategory.account,
-    EventCategory.account_verification_resent: AuditCategory.account,
+    EventCategory.pat_created:                     AuditCategory.pat,
+    EventCategory.pat_revoked:                     AuditCategory.pat,
+    EventCategory.auth_login:                      AuditCategory.auth,
+    EventCategory.auth_login_failed:               AuditCategory.auth,
+    EventCategory.auth_logout:                     AuditCategory.auth,
+    EventCategory.auth_oauth_login:                AuditCategory.auth,
+    EventCategory.account_email_verified:          AuditCategory.account,
+    EventCategory.account_password_changed:        AuditCategory.account,
+    EventCategory.account_verification_resent:     AuditCategory.account,
+    EventCategory.billing_checkout_started:        AuditCategory.billing,
+    EventCategory.billing_checkout_canceled:       AuditCategory.billing,
+    EventCategory.billing_subscription_activated:  AuditCategory.billing,
+    EventCategory.billing_subscription_updated:    AuditCategory.billing,
+    EventCategory.billing_subscription_canceled:   AuditCategory.billing,
 }
 
 

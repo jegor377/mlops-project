@@ -51,3 +51,7 @@ class User(Base):
     pending_checkout: Mapped[bool] = mapped_column(
         Boolean, server_default=text("false"), nullable=False
     )
+
+    stripe_customer_id: Mapped[str | None] = mapped_column(
+        String(255), unique=True, nullable=True
+    )

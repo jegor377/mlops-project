@@ -30,6 +30,8 @@ class Plan(Base):
     # cents; NULL = "negotiated" (Custom plan)
     price_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
+    stripe_price_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
     # NULL = unlimited
     requests_per_day: Mapped[int | None] = mapped_column(Integer, nullable=True)
     api_key_limit: Mapped[int | None] = mapped_column(Integer, nullable=True)
