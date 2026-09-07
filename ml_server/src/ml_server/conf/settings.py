@@ -39,6 +39,11 @@ class GitHubOAuthCredentials(BaseModel):
     client_secret: str
 
 
+class StripeSettings(BaseModel):
+    secret_key: SecretStr
+    webhook_secret: SecretStr
+
+
 class Settings(BaseSettings):
     env: Literal[
         'development',
@@ -63,6 +68,7 @@ class Settings(BaseSettings):
     google_oauth2_creds: GoogleOAuth2Credentials
     github_oauth2_creds: GitHubOAuthCredentials
     daily_request_limit: int = 1000
+    stripe: StripeSettings
 
     model_config = SettingsConfigDict(
         env_file='.env',
