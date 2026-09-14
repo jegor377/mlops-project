@@ -18,7 +18,11 @@ HOSTNAME = "localhost"
 REGISTER_URL = "/auth/register"
 VERIFY_URL = "/auth/verify-email"
 RESEND_URL = "/auth/resend-verification"
-VALID_PAYLOAD = {"email": "igor@example.com", "password": "StrongPass1!"}
+VALID_PAYLOAD = {
+    "email": "igor@example.com",
+    "password": "StrongPass1!",
+    "subscriptionPlan": "free",
+}
 
 
 # ---------------------------------------------------------------------------
@@ -103,7 +107,11 @@ async def _create_inactive_user_with_session(
     """Register a user and return the user row + raw password (no email send)."""
     password = "StrongPass1!"
     with patch("src.ml_server.routes.auth.send_verification_email", new_callable=AsyncMock):
-        await client.post(REGISTER_URL, json={"email": email, "password": password})
+        resp = await client.post(
+            REGISTER_URL,
+            json={"email": email, "password": password, "subscriptionPlan": "free"},
+        )
+    assert resp.status_code == 201, f"Registration failed: {resp.status_code} {resp.text}"
 
     result = await db_session.execute(select(User).where(User.email == email))
     user = result.scalar_one()
