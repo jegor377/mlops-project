@@ -1,0 +1,161 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Add seed_default_plans() function to billing.py service": [
+      {
+        "executionId": "d8902985-7a7e-4af1-b77c-84fc89c7753f",
+        "chatSessionId": "sess_87031915-f079-4f2c-9641-0d55a5762390",
+        "timestamp": 1789323424014
+      }
+    ],
+    "1.2 Write property test for plan seeding idempotence": [
+      {
+        "executionId": "41897bfe-e4fb-4e42-9dbf-b94636dd5910",
+        "chatSessionId": "sess_c466c7ad-9b0b-4ae5-bd30-9e2a8d2a221a",
+        "timestamp": 1789323544332
+      },
+      {
+        "executionId": "41897bfe-e4fb-4e42-9dbf-b94636dd5910",
+        "chatSessionId": "sess_c466c7ad-9b0b-4ae5-bd30-9e2a8d2a221a",
+        "timestamp": 1789323954337
+      }
+    ],
+    "2.1 Update create_upgrade_checkout_session() in billing.py service": [
+      {
+        "executionId": "41897bfe-e4fb-4e42-9dbf-b94636dd5910",
+        "chatSessionId": "sess_c466c7ad-9b0b-4ae5-bd30-9e2a8d2a221a",
+        "timestamp": 1789324119841
+      },
+      {
+        "executionId": "034320d5-edb6-42b5-910a-2508a45b837b",
+        "chatSessionId": "sess_20658c11-2409-412b-a8ef-3ba00cd7214f",
+        "timestamp": 1789325143547
+      },
+      {
+        "executionId": "034320d5-edb6-42b5-910a-2508a45b837b",
+        "chatSessionId": "sess_20658c11-2409-412b-a8ef-3ba00cd7214f",
+        "timestamp": 1789325668065
+      }
+    ],
+    "3.1 Add POST /checkout/upgrade endpoint to checkout.py routes": [
+      {
+        "executionId": "41897bfe-e4fb-4e42-9dbf-b94636dd5910",
+        "chatSessionId": "sess_c466c7ad-9b0b-4ae5-bd30-9e2a8d2a221a",
+        "timestamp": 1789324119866
+      },
+      {
+        "executionId": "b5ba7b94-f243-4eff-8a8e-fd6c8316f157",
+        "chatSessionId": "sess_e611a9d0-f501-4ef8-9821-5b8d8b724dfe",
+        "timestamp": 1789326046302
+      },
+      {
+        "executionId": "b5ba7b94-f243-4eff-8a8e-fd6c8316f157",
+        "chatSessionId": "sess_e611a9d0-f501-4ef8-9821-5b8d8b724dfe",
+        "timestamp": 1789326606919
+      }
+    ],
+    "4.1 Update handle_checkout_session_completed() in billing.py": [
+      {
+        "executionId": "41897bfe-e4fb-4e42-9dbf-b94636dd5910",
+        "chatSessionId": "sess_c466c7ad-9b0b-4ae5-bd30-9e2a8d2a221a",
+        "timestamp": 1789324119893
+      }
+    ],
+    "5.1 Create new /billing/subscription GET endpoint in billing.py routes": [
+      {
+        "executionId": "41897bfe-e4fb-4e42-9dbf-b94636dd5910",
+        "chatSessionId": "sess_c466c7ad-9b0b-4ae5-bd30-9e2a8d2a221a",
+        "timestamp": 1789324119947
+      }
+    ],
+    "6.1 Update lifespan() in app.py to seed default plans": [
+      {
+        "executionId": "41897bfe-e4fb-4e42-9dbf-b94636dd5910",
+        "chatSessionId": "sess_c466c7ad-9b0b-4ae5-bd30-9e2a8d2a221a",
+        "timestamp": 1789324119976
+      }
+    ],
+    "7.1 Add billing tab to dashboard sidebar": [
+      {
+        "executionId": "41897bfe-e4fb-4e42-9dbf-b94636dd5910",
+        "chatSessionId": "sess_c466c7ad-9b0b-4ae5-bd30-9e2a8d2a221a",
+        "timestamp": 1789324120002
+      }
+    ],
+    "7.2 Add billing page component to dashboard": [
+      {
+        "executionId": "41897bfe-e4fb-4e42-9dbf-b94636dd5910",
+        "chatSessionId": "sess_c466c7ad-9b0b-4ae5-bd30-9e2a8d2a221a",
+        "timestamp": 1789324120030
+      }
+    ],
+    "7.3 Wire billing page into dashboard routing": [
+      {
+        "executionId": "41897bfe-e4fb-4e42-9dbf-b94636dd5910",
+        "chatSessionId": "sess_c466c7ad-9b0b-4ae5-bd30-9e2a8d2a221a",
+        "timestamp": 1789324120055
+      }
+    ],
+    "9.1 Integration test for plan seeding (requirements 1)": [
+      {
+        "executionId": "41897bfe-e4fb-4e42-9dbf-b94636dd5910",
+        "chatSessionId": "sess_c466c7ad-9b0b-4ae5-bd30-9e2a8d2a221a",
+        "timestamp": 1789324120084
+      }
+    ],
+    "9.2 Integration test for upgrade subscription flow (requirements 2, 3, 4, 5)": [
+      {
+        "executionId": "41897bfe-e4fb-4e42-9dbf-b94636dd5910",
+        "chatSessionId": "sess_c466c7ad-9b0b-4ae5-bd30-9e2a8d2a221a",
+        "timestamp": 1789324120111
+      }
+    ],
+    "9.3 Integration test for upgrade without existing subscription (requirements 2, 3, 4)": [
+      {
+        "executionId": "41897bfe-e4fb-4e42-9dbf-b94636dd5910",
+        "chatSessionId": "sess_c466c7ad-9b0b-4ae5-bd30-9e2a8d2a221a",
+        "timestamp": 1789324120138
+      }
+    ],
+    "9.4 Integration test for billing subscription endpoint (requirements 7)": [
+      {
+        "executionId": "41897bfe-e4fb-4e42-9dbf-b94636dd5910",
+        "chatSessionId": "sess_c466c7ad-9b0b-4ae5-bd30-9e2a8d2a221a",
+        "timestamp": 1789324120165
+      }
+    ],
+    "9.5 Integration test for upgrade with canceled subscription (requirements 5)": [
+      {
+        "executionId": "41897bfe-e4fb-4e42-9dbf-b94636dd5910",
+        "chatSessionId": "sess_c466c7ad-9b0b-4ae5-bd30-9e2a8d2a221a",
+        "timestamp": 1789324120193
+      }
+    ],
+    "10. Final checkpoint - Ensure all tests pass": [
+      {
+        "executionId": "41897bfe-e4fb-4e42-9dbf-b94636dd5910",
+        "chatSessionId": "sess_c466c7ad-9b0b-4ae5-bd30-9e2a8d2a221a",
+        "timestamp": 1789324120230
+      }
+    ],
+    "2. Update checkout service for upgrade flows (requirements 2, 5)": [
+      {
+        "executionId": "034320d5-edb6-42b5-910a-2508a45b837b",
+        "chatSessionId": "sess_20658c11-2409-412b-a8ef-3ba00cd7214f",
+        "timestamp": 1789325128266
+      },
+      {
+        "executionId": "034320d5-edb6-42b5-910a-2508a45b837b",
+        "chatSessionId": "sess_20658c11-2409-412b-a8ef-3ba00cd7214f",
+        "timestamp": 1789325668109
+      }
+    ],
+    "3. Add new /checkout/upgrade endpoint (requirements 2, 5)": [
+      {
+        "executionId": "c88d91d9-f186-4739-a06c-0ba5c8d3d952",
+        "chatSessionId": "sess_cbf12aaa-52bc-4dc7-83f5-c0fe563c6a03",
+        "timestamp": 1789325752672
+      }
+    ]
+  }
+}
