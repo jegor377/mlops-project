@@ -59,6 +59,16 @@
         "executionId": "41897bfe-e4fb-4e42-9dbf-b94636dd5910",
         "chatSessionId": "sess_c466c7ad-9b0b-4ae5-bd30-9e2a8d2a221a",
         "timestamp": 1789324119893
+      },
+      {
+        "executionId": "be36b0a2-d13c-4d22-850c-778df0b0ce64",
+        "chatSessionId": "sess_22ee776a-7e3d-4e07-ae1d-85cd1eb376b0",
+        "timestamp": 1789404749138
+      },
+      {
+        "executionId": "be36b0a2-d13c-4d22-850c-778df0b0ce64",
+        "chatSessionId": "sess_22ee776a-7e3d-4e07-ae1d-85cd1eb376b0",
+        "timestamp": 1789405288524
       }
     ],
     "5.1 Create new /billing/subscription GET endpoint in billing.py routes": [
@@ -155,6 +165,18 @@
         "executionId": "c88d91d9-f186-4739-a06c-0ba5c8d3d952",
         "chatSessionId": "sess_cbf12aaa-52bc-4dc7-83f5-c0fe563c6a03",
         "timestamp": 1789325752672
+      }
+    ],
+    "4. Update webhook handler for upgrade flows (requirements 3, 4)": [
+      {
+        "executionId": "0cf60183-b044-4360-9f75-ea0cf89c057e",
+        "chatSessionId": "sess_bc55c622-40c2-4d32-b426-4fe95922aa2c",
+        "timestamp": 1789404583155
+      },
+      {
+        "executionId": "0cf60183-b044-4360-9f75-ea0cf89c057e",
+        "chatSessionId": "sess_bc55c622-40c2-4d32-b426-4fe95922aa2c",
+        "timestamp": 1789404696546
       }
     ]
   }

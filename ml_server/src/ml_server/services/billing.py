@@ -183,7 +183,11 @@ async def create_upgrade_checkout_session(
             line_items=line_items,
             success_url=success_url,
             cancel_url=cancel_url,
-            metadata={"user_id": str(user.id), "is_upgrade": "true"},
+            metadata={
+                "user_id": str(user.id),
+                "is_upgrade": "true",
+                "current_subscription_id": existing_subscription.stripe_subscription_id,
+            },
         )
     else:
         # If no existing subscription, create standard session
@@ -289,39 +293,40 @@ async def handle_checkout_session_completed(
             if checkout_session.metadata
             else None
         )
-        
+
+        existing_subscription = None
         if current_subscription_id:
-            # Update existing subscription to Pro plan
             result = await session.execute(
                 select(Subscription).where(
                     Subscription.stripe_subscription_id == current_subscription_id
                 )
             )
-            subscription = result.scalar_one_or_none()
-            if subscription:
-                subscription.plan_id = plan.id
-                subscription.status = STRIPE_TO_LOCAL_STATUS.get(
-                    checkout_session.subscription.status if checkout_session.subscription else "active",
-                    SubscriptionStatus.ACTIVE
+            existing_subscription = result.scalar_one_or_none()
+
+        if existing_subscription and existing_subscription.status != SubscriptionStatus.CANCELED:
+            # Retrieve full Stripe subscription to get current status and period end
+            # (checkout_session.subscription is just a string ID in webhook payloads)
+            stripe_sub = await stripe.Subscription.retrieve_async(
+                stripe_subscription_id,
+                api_key=settings.stripe.secret_key.get_secret_value(),
+            )
+            existing_subscription.plan_id = plan.id
+            existing_subscription.status = STRIPE_TO_LOCAL_STATUS.get(
+                stripe_sub["status"], SubscriptionStatus.ACTIVE
+            )
+            current_period_end = stripe_sub["items"]["data"][0]["current_period_end"]
+            if current_period_end:
+                existing_subscription.current_period_end = datetime.fromtimestamp(
+                    current_period_end, tz=timezone.utc
                 )
-                if checkout_session.subscription:
-                    current_period_end = checkout_session.subscription.items.data[0].current_period_end
-                    if current_period_end:
-                        subscription.current_period_end = datetime.fromtimestamp(
-                            current_period_end, tz=timezone.utc
-                        )
-            else:
-                logger.warning(f"Upgrade session referenced non-existent subscription {current_subscription_id}")
-                # Fallback to creating new subscription if upgrade target not found
-                await _upsert_subscription_from_stripe(
-                    session,
-                    user_id=user.id,
-                    plan_id=plan.id,
-                    stripe_subscription_id=stripe_subscription_id,
-                    settings=settings,
-                )
+            # Update stripe_subscription_id in case Stripe created a new subscription ID
+            existing_subscription.stripe_subscription_id = stripe_subscription_id
         else:
-            # No existing subscription ID, create new subscription
+            # Not found, or the found subscription is CANCELED — create a new one
+            if existing_subscription is None and current_subscription_id:
+                logger.warning(
+                    f"Upgrade session referenced non-existent subscription {current_subscription_id}"
+                )
             await _upsert_subscription_from_stripe(
                 session,
                 user_id=user.id,

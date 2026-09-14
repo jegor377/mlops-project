@@ -51,7 +51,10 @@ uv lock                  # Lock dependencies
 task ml_server:run-dev        # Run dev server with hot reload
 task ml_server:upgrade-db     # Run Alembic migrations
 task ml_server:new-migration  # Create new Alembic migration
-task ml_server:test           # Run pytest (with real PostgreSQL/Redis containers. This can take even a few minutes to run.)
+task ml_server:test           # Run pytest (with real PostgreSQL/Redis containers. This can take even a few minutes to run. Always run from project root directory.)
+task ml_server:test -- /path/to/the/file # Run pytest for a specific pytest file (with real PostgreSQL/Redis containers. This can take even a few minutes to run. Always run from project root directory.)
+# example:
+# task ml_server:test -- src/tests/api/test_register.py
 ```
 
 ### Frontend

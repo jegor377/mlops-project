@@ -55,8 +55,8 @@ This document breaks down the implementation into discrete coding steps based on
     - Test error when user has pending checkout
     - _Requirements: 2.6_
 
-- [ ] 4. Update webhook handler for upgrade flows (requirements 3, 4)
-  - [ ] 4.1 Update handle_checkout_session_completed() in billing.py
+- [x] 4. Update webhook handler for upgrade flows (requirements 3, 4)
+  - [x] 4.1 Update handle_checkout_session_completed() in billing.py
     - Extract is_upgrade flag from checkout session metadata
     - If is_upgrade=true and existing subscription found, update subscription to Pro plan
     - If is_upgrade=false or no existing subscription, create new subscription
