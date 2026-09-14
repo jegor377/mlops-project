@@ -24,6 +24,66 @@ STRIPE_TO_LOCAL_STATUS: dict[str, SubscriptionStatus] = {
 }
 
 
+async def seed_default_plans(session: AsyncSession, settings: Settings) -> None:
+    """Seed Free and Pro plans on startup if they don't exist."""
+    # Check if Free plan exists
+    result = await session.execute(select(Plan).where(Plan.tier == PlanTier.FREE))
+    free_plan = result.scalar_one_or_none()
+
+    if free_plan is None:
+        # Create Free plan with default limits
+        free_plan = Plan(
+            tier=PlanTier.FREE,
+            name="Free",
+            price_cents=0,
+            stripe_price_id=None,
+            requests_per_day=None,  # unlimited
+            api_key_limit=None,     # unlimited
+            history_days=None,      # unlimited
+            priority_support=False,
+            webhook_notifications=False,
+            dedicated_support=False,
+            custom_sla=False,
+            on_prem=False,
+            is_active=True,
+        )
+        session.add(free_plan)
+        await session.flush()
+
+    # Check if Pro plan exists
+    result = await session.execute(select(Plan).where(Plan.tier == PlanTier.PRO))
+    pro_plan = result.scalar_one_or_none()
+
+    if pro_plan is None:
+        # Create Pro plan if stripe_price_id is configured
+        if settings.stripe.price_id is None:
+            logger.warning("Pro plan not configured - stripe_price_id not set")
+            return
+
+        pro_plan = Plan(
+            tier=PlanTier.PRO,
+            name="Pro",
+            price_cents=None,  # Negotiated via Stripe
+            stripe_price_id=settings.stripe.price_id.get_secret_value(),
+            requests_per_day=None,  # unlimited
+            api_key_limit=None,     # unlimited
+            history_days=None,      # unlimited
+            priority_support=True,
+            webhook_notifications=True,
+            dedicated_support=False,
+            custom_sla=False,
+            on_prem=False,
+            is_active=True,
+        )
+        session.add(pro_plan)
+        await session.flush()
+    elif pro_plan.stripe_price_id is None:
+        # Update Pro plan if price_id is configured but not set
+        if settings.stripe.price_id is not None:
+            pro_plan.stripe_price_id = settings.stripe.price_id.get_secret_value()
+            await session.flush()
+
+
 async def get_pro_plan(session: AsyncSession) -> Plan:
     result = await session.execute(
         select(Plan).where(Plan.tier == PlanTier.PRO, Plan.is_active.is_(True))
@@ -70,6 +130,73 @@ async def create_checkout_session(
         cancel_url=cancel_url,
         metadata={"user_id": str(user_id)},
     )
+
+
+async def create_upgrade_checkout_session(
+    *,
+    settings: Settings,
+    session: AsyncSession,
+    user: User,
+    success_url: str,
+    cancel_url: str,
+) -> stripe.checkout.Session:
+    """
+    Create a checkout session for upgrading an existing subscription to Pro plan.
+
+    If the user has an existing subscription with a Stripe ID, this creates an upgrade
+    session that updates the existing subscription. Otherwise, it creates a standard
+    subscription session.
+    """
+    # Get Pro plan from database
+    pro_plan = await get_pro_plan(session)
+
+    # Ensure Stripe customer exists for user
+    customer_id = await ensure_stripe_customer(session, user, settings)
+
+    # Check if user has an existing subscription with Stripe ID
+    result = await session.execute(
+        select(Subscription).where(
+            Subscription.user_id == user.id,
+            Subscription.stripe_subscription_id.is_not(None)
+        ).order_by(Subscription.created_at.desc())
+    )
+    existing_subscription = result.scalar_one_or_none()
+
+    # Build line items for Pro plan
+    line_items = [{"price": pro_plan.stripe_price_id, "quantity": 1}]
+
+    if existing_subscription:
+        # If user has existing subscription with Stripe ID, create upgrade session
+        # with subscription_data metadata to update the existing subscription
+        return await stripe.checkout.Session.create_async(
+            api_key=settings.stripe.secret_key.get_secret_value(),
+            mode="subscription",
+            customer=customer_id,
+            subscription=existing_subscription.stripe_subscription_id,
+            subscription_data={
+                "metadata": {
+                    "user_id": str(user.id),
+                    "is_upgrade": "true",
+                    "current_subscription_id": existing_subscription.stripe_subscription_id,
+                }
+            },
+            line_items=line_items,
+            success_url=success_url,
+            cancel_url=cancel_url,
+            metadata={"user_id": str(user.id), "is_upgrade": "true"},
+        )
+    else:
+        # If no existing subscription, create standard session
+        return await stripe.checkout.Session.create_async(
+            api_key=settings.stripe.secret_key.get_secret_value(),
+            mode="subscription",
+            customer=customer_id,
+            client_reference_id=str(user.id),
+            line_items=line_items,
+            success_url=success_url,
+            cancel_url=cancel_url,
+            metadata={"user_id": str(user.id), "is_upgrade": "false"},
+        )
 
 
 def construct_webhook_event(
@@ -148,13 +275,69 @@ async def handle_checkout_session_completed(
 
     plan = await get_pro_plan(session)
 
-    await _upsert_subscription_from_stripe(
-        session,
-        user_id=user.id,
-        plan_id=plan.id,
-        stripe_subscription_id=stripe_subscription_id,
-        settings=settings,
+    # Check if this is an upgrade checkout session
+    is_upgrade = (
+        checkout_session.metadata and 
+        checkout_session.metadata.get("is_upgrade") == "true"
     )
+
+    if is_upgrade:
+        # For upgrade sessions, we need to update the existing subscription
+        # by extracting current_subscription_id from metadata
+        current_subscription_id = (
+            checkout_session.metadata.get("current_subscription_id")
+            if checkout_session.metadata
+            else None
+        )
+        
+        if current_subscription_id:
+            # Update existing subscription to Pro plan
+            result = await session.execute(
+                select(Subscription).where(
+                    Subscription.stripe_subscription_id == current_subscription_id
+                )
+            )
+            subscription = result.scalar_one_or_none()
+            if subscription:
+                subscription.plan_id = plan.id
+                subscription.status = STRIPE_TO_LOCAL_STATUS.get(
+                    checkout_session.subscription.status if checkout_session.subscription else "active",
+                    SubscriptionStatus.ACTIVE
+                )
+                if checkout_session.subscription:
+                    current_period_end = checkout_session.subscription.items.data[0].current_period_end
+                    if current_period_end:
+                        subscription.current_period_end = datetime.fromtimestamp(
+                            current_period_end, tz=timezone.utc
+                        )
+            else:
+                logger.warning(f"Upgrade session referenced non-existent subscription {current_subscription_id}")
+                # Fallback to creating new subscription if upgrade target not found
+                await _upsert_subscription_from_stripe(
+                    session,
+                    user_id=user.id,
+                    plan_id=plan.id,
+                    stripe_subscription_id=stripe_subscription_id,
+                    settings=settings,
+                )
+        else:
+            # No existing subscription ID, create new subscription
+            await _upsert_subscription_from_stripe(
+                session,
+                user_id=user.id,
+                plan_id=plan.id,
+                stripe_subscription_id=stripe_subscription_id,
+                settings=settings,
+            )
+    else:
+        # Standard checkout flow - create new subscription
+        await _upsert_subscription_from_stripe(
+            session,
+            user_id=user.id,
+            plan_id=plan.id,
+            stripe_subscription_id=stripe_subscription_id,
+            settings=settings,
+        )
 
     user.pending_checkout = False
 

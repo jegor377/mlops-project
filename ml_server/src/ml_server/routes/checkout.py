@@ -90,6 +90,74 @@ async def checkout_complete(
     return RedirectResponse(url=checkout_session.url, status_code=303)
 
 
+@router.post("/checkout/upgrade", status_code=303)
+async def checkout_upgrade(
+    req: Request,
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+    settings: Annotated[Settings, Depends(get_settings)],
+):
+    """Create upgrade checkout session for existing Free user."""
+    # Set pending_checkout=True to allow checkout to proceed
+    user.pending_checkout = True
+
+    try:
+        plan = await billing_services.get_pro_plan(session)
+
+        if plan.stripe_price_id is None:
+            logger.error(f"Stripe price id is None in the plan with id = {plan.id}")
+            raise HTTPException(status_code=500, detail="Checkout is not available right now.")
+
+        customer_id = await billing_services.ensure_stripe_customer(session, user, settings)
+
+        success_url = settings.hostname
+        success_url += req.app.url_path_for("checkout_success")
+        success_url += "?session_id={CHECKOUT_SESSION_ID}"
+
+        cancel_url = settings.hostname + req.app.url_path_for("checkout_stripe_cancel")
+
+        # Call create_upgrade_checkout_session to create Stripe session
+        checkout_session = await billing_services.create_upgrade_checkout_session(
+            settings=settings,
+            session=session,
+            user=user,
+            success_url=success_url,
+            cancel_url=cancel_url,
+        )
+    except ValueError as e:
+        logger.error(f"Checkout misconfiguration: {e}")
+        user.pending_checkout = False
+        await session.rollback()
+        raise HTTPException(status_code=500, detail="Checkout is not available right now.")
+    except stripe.StripeError as e:
+        logger.error(f"Stripe error creating checkout session for user {user.id}: {e}")
+        user.pending_checkout = False
+        await session.rollback()
+        raise HTTPException(status_code=502, detail="Could not start checkout.")
+
+    await log_event(
+        db=session,
+        user_id=user.id,
+        event=EventCategory.billing_checkout_started,
+        request=req,
+    )
+
+    try:
+        await session.commit()
+    except Exception as e:
+        user.pending_checkout = False
+        await session.rollback()
+        logger.error(f"Failed to persist checkout state for user {user.id}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+    if checkout_session.url is None:
+        logger.error(f"Checkout session url is None for user with id = {user.id}")
+        user.pending_checkout = False
+        raise HTTPException(status_code=500, detail="Checkout is not available right now.")
+
+    return RedirectResponse(url=checkout_session.url, status_code=303)
+
+
 @router.post("/checkout/cancel", status_code=200)
 async def checkout_cancel(
     req: Request,

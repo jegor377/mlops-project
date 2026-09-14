@@ -42,6 +42,7 @@ class GitHubOAuthCredentials(BaseModel):
 class StripeSettings(BaseModel):
     secret_key: SecretStr
     webhook_secret: SecretStr
+    price_id: SecretStr
 
 
 class Settings(BaseSettings):

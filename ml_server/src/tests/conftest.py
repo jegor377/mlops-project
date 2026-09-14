@@ -20,6 +20,8 @@ from src.ml_server.models.user import User
 from src.ml_server.models.user_auth_method import UserAuthMethod, AuthProvider
 from src.ml_server.models.user_session import UserSession
 from src.ml_server.models.audit_log import AuditLog, EVENT_CATEGORY
+from src.ml_server.models.plan import Plan
+from src.ml_server.enums.plan_tier import PlanTier
 
 
 LOGIN_PAYLOAD = {"email": "test@example.com", "password": "testpassword"}
@@ -28,13 +30,6 @@ LOGIN_PAYLOAD = {"email": "test@example.com", "password": "testpassword"}
 @pytest.fixture
 def test_settings():
     return Settings()
-
-
-@pytest_asyncio.fixture()
-async def app(test_settings):
-    app = create_app(test_settings)
-    async with LifespanManager(app):
-        yield app
 
 
 @pytest_asyncio.fixture()
@@ -50,6 +45,13 @@ async def engine(test_settings):
     async with eng.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
     await eng.dispose()
+
+
+@pytest_asyncio.fixture()
+async def app(test_settings, engine):
+    app = create_app(test_settings)
+    async with LifespanManager(app):
+        yield app
 
 
 @pytest_asyncio.fixture
@@ -173,3 +175,24 @@ async def make_audit_log_entry(
     session.add(entry)
     await session.flush()
     return entry
+
+
+async def make_plan(
+    session: AsyncSession,
+    *,
+    tier: PlanTier = PlanTier.FREE,
+    name: str = "Free",
+    price_cents: int = 0,
+    requests_per_day: int = 100,
+) -> Plan:
+    plan = Plan(
+        tier=tier,
+        name=name,
+        price_cents=price_cents,
+        requests_per_day=requests_per_day,
+        is_active=True,
+    )
+    session.add(plan)
+    await session.commit()
+    await session.refresh(plan)
+    return plan

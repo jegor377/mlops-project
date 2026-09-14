@@ -13,6 +13,7 @@ from src.ml_server.routes.auth import router as auth_router
 from src.ml_server.routes.pat import router as pat_router
 from src.ml_server.routes.requests import router as requests_router
 from src.ml_server.routes.checkout import router as checkout_router
+from src.ml_server.services.billing import seed_default_plans
 from src.ml_server.services.ml_model import Model
 
 
@@ -61,6 +62,11 @@ def create_app(settings: Settings) -> FastAPI:
         configure_google_oauth(oauth, settings)
         configure_github_oauth(oauth, settings)
         app.state.oauth = oauth
+        
+        # Seed default plans on startup
+        async with app.state.db() as session:
+            await seed_default_plans(session, settings)
+        
         yield
         # Clean up the ML models and release the resources
         if settings.load_model:
