@@ -28,7 +28,7 @@ def get_pat(scopes: list[str] | None = None):
         )
         pat = result.scalar_one_or_none()
 
-        if not pat or (
+        if not pat or (not pat.is_active) or (
             pat.expires_at and pat.expires_at < datetime.now(timezone.utc)
         ):
             raise HTTPException(status_code=401, detail="Not authenticated")
