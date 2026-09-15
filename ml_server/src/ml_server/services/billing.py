@@ -83,6 +83,8 @@ async def seed_default_plans(session: AsyncSession, settings: Settings) -> None:
             pro_plan.stripe_price_id = settings.stripe.price_id.get_secret_value()
             await session.flush()
 
+    await session.commit()
+
 
 async def get_pro_plan(session: AsyncSession) -> Plan:
     result = await session.execute(
@@ -282,14 +284,14 @@ async def handle_checkout_session_completed(
     # Check if this is an upgrade checkout session
     is_upgrade = (
         checkout_session.metadata and 
-        checkout_session.metadata.get("is_upgrade") == "true"
+        checkout_session.metadata["is_upgrade"] == "true"
     )
 
     if is_upgrade:
         # For upgrade sessions, we need to update the existing subscription
         # by extracting current_subscription_id from metadata
         current_subscription_id = (
-            checkout_session.metadata.get("current_subscription_id")
+            checkout_session.metadata["current_subscription_id"]
             if checkout_session.metadata
             else None
         )
