@@ -531,7 +531,6 @@ async def oauth_callback(
             normalized_email,
             sub,
             subscription_plan,
-            redirect_uri,
             auth_provider
         )
     except IntegrityError as e:

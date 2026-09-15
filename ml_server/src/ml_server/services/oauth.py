@@ -9,6 +9,8 @@ from urllib.parse import urlencode
 
 from src.ml_server.models.user import User
 from src.ml_server.models.user_auth_method import UserAuthMethod, AuthProvider
+from src.ml_server.models.subscription import Subscription
+from src.ml_server.models.plan import Plan
 from src.ml_server.enums.plan_tier import PlanTier
 from src.ml_server.utils.billing import has_pending_checkout
 
@@ -46,7 +48,6 @@ async def create_active_user(
     normalized_email: str,
     sub: str,
     subscription_plan: PlanTier,
-    redirect_uri: str,
     auth_provider: AuthProvider,
     session: AsyncSession
 ) -> User:
@@ -63,15 +64,24 @@ async def create_active_user(
         provider_user_id=sub,
     )
 
+    free_plan_result = await session.execute(
+        select(Plan).where(Plan.tier == PlanTier.FREE)
+    )
+    free_plan = free_plan_result.scalar_one_or_none()
+    new_subscription = Subscription(
+        plan=free_plan,
+        user=user,
+    )
+
     session.add(user)
     session.add(new_auth_method)
+    session.add(new_subscription)
     return user
 
 
 async def try_creating_user_auth_method(
     user: User,
     sub: str,
-    redirect_uri: str,
     auth_provider: AuthProvider,
     session: AsyncSession
 ) -> None:
@@ -130,7 +140,6 @@ async def handle_oauth_user_provisioning(
     normalized_email: str,
     sub: str,
     subscription_plan: PlanTier,
-    redirect_uri: str,
     auth_provider: AuthProvider,
 ) -> User:
     """Handles the transactional creation or updating of an OAuth user."""
@@ -140,7 +149,6 @@ async def handle_oauth_user_provisioning(
                 normalized_email,
                 sub,
                 subscription_plan,
-                redirect_uri,
                 auth_provider,
                 session
             )
@@ -148,7 +156,6 @@ async def handle_oauth_user_provisioning(
             await try_creating_user_auth_method(
                 user,
                 sub,
-                redirect_uri,
                 auth_provider,
                 session
             )
