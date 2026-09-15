@@ -12,7 +12,7 @@ export default function RegisterPage() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const subscriptionPlan = searchParams.get('plan');
+  const subscriptionPlan = searchParams.get('plan') ?? 'free';
 
   const prepareOIDCUrl = (url: string): string => {
     const oidcUrlSearchParams = new URLSearchParams();
