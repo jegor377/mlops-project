@@ -36,6 +36,10 @@ export default defineConfig({
               target: BACKEND_URL,
               changeOrigin: true,
             },
+            "/billing": {
+              target: BACKEND_URL,
+              changeOrigin: true,
+            },
           },
         },
       }
