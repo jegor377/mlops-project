@@ -3,6 +3,8 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import RedirectResponse
 from typing import Annotated
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from urllib.parse import urlencode
@@ -13,6 +15,7 @@ import stripe
 from src.ml_server.conf.settings import Settings
 from src.ml_server.models.user import User
 from src.ml_server.models.audit_log import EventCategory
+from src.ml_server.models.subscription import Subscription, SubscriptionStatus
 
 from src.ml_server.dependencies.settings import get_settings
 from src.ml_server.dependencies.db import get_session
@@ -20,6 +23,8 @@ from src.ml_server.dependencies.current_user import get_current_user
 
 from src.ml_server.services.audit_log import log_event
 from src.ml_server.services import billing as billing_services
+
+from src.ml_server.schemas.billing import SubscriptionOut, SubscriptionPlanOut
 
 from src.ml_server.utils.frontend_urls import FrontendURLs
 
@@ -278,3 +283,36 @@ async def stripe_webhook(
         raise HTTPException(status_code=500, detail="Internal server error")
 
     return Response(status_code=200)
+
+
+@router.get("/billing/subscription", response_model=SubscriptionOut)
+async def get_subscription(
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    result = await session.execute(
+        select(Subscription)
+        .options(selectinload(Subscription.plan))
+        .where(Subscription.user_id == user.id)
+        .order_by(Subscription.created_at.desc())
+    )
+    subscription = result.scalars().first()
+
+    if subscription is None or subscription.status == SubscriptionStatus.CANCELED:
+        return SubscriptionOut(
+            status=SubscriptionStatus.CANCELED,
+            current_period_start=None,
+            current_period_end=None,
+            plan=None,
+        )
+
+    return SubscriptionOut(
+        status=subscription.status,
+        current_period_start=subscription.current_period_start,
+        current_period_end=subscription.current_period_end,
+        plan=(
+            SubscriptionPlanOut.model_validate(subscription.plan)
+            if subscription.plan
+            else None
+        ),
+    )
