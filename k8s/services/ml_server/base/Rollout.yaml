@@ -37,6 +37,18 @@ spec:
               mountPath: /run/secrets/redis_password
               subPath: redis-password
               readOnly: true
+            - name: stripe-secret-key
+              mountPath: /run/secrets/stripe__secret_key
+              subPath: data
+              readOnly: true
+            - name: stripe-webhook-secret
+              mountPath: /run/secrets/stripe__webhook_secret
+              subPath: data
+              readOnly: true
+            - name: stripe-price-id
+              mountPath: /run/secrets/stripe__price_id
+              subPath: data
+              readOnly: true
             - name: tmp
               mountPath: /tmp
           env:
@@ -93,6 +105,15 @@ spec:
         - name: redis-password
           secret:
             secretName: bitnami-redis
+        - name: stripe-secret-key
+          secret:
+            secretName: stripe-secret-key
+        - name: stripe-webhook-secret
+          secret:
+            secretName: stripe-webhook-secret
+        - name: stripe-price-id
+          secret:
+            secretName: stripe-price-id
   strategy:
     canary: #Indicates that the rollout should use the Canary strategy
       maxSurge: '25%'
