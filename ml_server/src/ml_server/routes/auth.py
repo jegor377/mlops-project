@@ -18,6 +18,8 @@ from src.ml_server.models.user_auth_method import UserAuthMethod, AuthProvider
 from src.ml_server.models.email_verification import EmailVerification
 from src.ml_server.models.password_reset import PasswordReset
 from src.ml_server.models.audit_log import EventCategory
+from src.ml_server.models.subscription import Subscription
+from src.ml_server.models.plan import Plan
 
 from src.ml_server.schemas.user import UserCreate, UserLogin, ForgotPassword, ResetPassword, Me
 from src.ml_server.enums.plan_tier import PlanTier
@@ -64,7 +66,15 @@ async def register(
         provider_user_id=normalized_email,
         password_hash=password_hash.decode("utf-8"),
     )
+    free_plan_result = await session.execute(
+        select(Plan).where(Plan.tier == PlanTier.FREE)
+    )
+    free_plan = free_plan_result.scalar_one_or_none()
     new_user.auth_methods.append(new_auth_method)
+    new_subscription = Subscription(
+        plan=free_plan,
+    )
+    new_user.subscriptions.append(new_subscription)
     session.add(new_user)
 
     try:
