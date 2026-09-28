@@ -284,6 +284,7 @@ async def handle_checkout_session_completed(
     # Check if this is an upgrade checkout session
     is_upgrade = (
         checkout_session.metadata and 
+        "is_upgrade" in checkout_session.metadata and
         checkout_session.metadata["is_upgrade"] == "true"
     )
 
